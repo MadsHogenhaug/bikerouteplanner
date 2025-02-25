@@ -153,10 +153,6 @@
         <input type="checkbox" id="excludeFerry" checked>
         <label for="excludeFerry">Exclude Ferry</label>
       </div>
-      <div class="option">
-        <input type="checkbox" id="excludeTolls">
-        <label for="excludeTolls">Exclude Tolls</label>
-      </div>
     </div>
     <!-- Additional Options -->
     <div id="additionalOptions">
@@ -239,48 +235,55 @@
       map.fitBounds(bounds, { padding: 20 });
     }
 
-    // Fetch Route on Button Click
-    document.getElementById('getRoute').addEventListener('click', function() {
-      if (!startCoords || !endCoords) {
-        alert("Please select both start and end locations.");
-        return;
-      }
-      var requestBody = {
-        start: startCoords,
-        end: endCoords
-      };
-      console.log("Exclude Ferry:", document.getElementById('excludeFerry').checked);
-      console.log("Exclude Tolls:", document.getElementById('excludeTolls').checked);
+        // Fetch Route on Button Click
+        document.getElementById('getRoute').addEventListener('click', function() {
+        if (!startCoords || !endCoords) {
+            alert("Please select both start and end locations.");
+            return;
+        }
 
-      fetch('/route', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
-      })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error("HTTP error " + response.status);
+        // Build an array for exclusions based on checkbox values
+        let exclusions = [];
+        if (document.getElementById('excludeFerry').checked) {
+            exclusions.push("ferry");
         }
-        return response.json();
-      })
-      .then(data => {
-        console.log("API Response:", data);
-        if (data.error) {
-          alert("Error: " + data.error);
-          return;
-        }
-        var routes = data.routes;
-        if (!routes || routes.length === 0) {
-          alert("No routes found.");
-          return;
-        }
-        drawRouteOnMap(routes[0]);
-      })
-      .catch(error => {
-        console.error("Error fetching route:", error);
-        alert("Failed to fetch route. See console for details.");
-      });
+
+        // Prepare the request body including the exclusions
+        var requestBody = {
+            start: startCoords,
+            end: endCoords,
+            exclude: exclusions  // This will be an empty array if none selected
+        };
+
+        fetch('/route', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+        })
+        .then(response => {
+            if (!response.ok) {
+            throw new Error("HTTP error " + response.status);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+            alert("Error: " + data.error);
+            return;
+            }
+            var routes = data.routes;
+            if (!routes || routes.length === 0) {
+            alert("No routes found.");
+            return;
+            }
+            drawRouteOnMap(routes[0]);
+        })
+        .catch(error => {
+            console.error("Error fetching route:", error);
+            alert("Failed to fetch route. See console for details.");
+        });
     });
+
   </script>
 </body>
 </html>
