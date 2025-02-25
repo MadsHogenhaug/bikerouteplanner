@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Bike Lane Route Planner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Mapbox GL JS -->
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.css" rel="stylesheet" />
+
+    <!-- Mapbox Geocoder Plugin -->
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.1.1/mapbox-gl-geocoder.min.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.1.1/mapbox-gl-geocoder.css" rel="stylesheet" />
+
+    <style>
+        /* Reset default margin and padding */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        /* Full-screen map */
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+
+
+        
+    </style>
+</head>
+
+<body>
+
+
+
+<div id="map"></div>
+
+<script>
+    mapboxgl.accessToken = "{{ mapbox_token }}";
+
+    // Initialize the Mapbox Map
+    var map = new mapboxgl.Map({
+        container: 'map', 
+        style: 'mapbox://styles/mapbox/navigation-night-v1',
+        center: [12.592202, 55.654118], 
+        zoom: 13 
+    });
+
+    // Add zoom and rotation controls
+    map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
+
+    // Add the control to the map.
+    map.addControl(
+        new MapboxGeocoder({
+            accessToken: mapboxgl.accessToken,
+            mapboxgl: mapboxgl
+        }),
+        'top-left'
+    );
+
+    // Handle route fetching
+    document.getElementById('getRoute').addEventListener('click', function() {
+        var start = startGeocoder.getProximity();
+        var end = endGeocoder.getProximity();
+
+        if (!start || !end) {
+            alert("Please select both start and end locations.");
+            return;
+        }
+
+        fetch('/route', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ start: [start.longitude, start.latitude], end: [end.longitude, end.latitude] })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert("Error: " + data.error);
+                return;
+            }
+
+            // Remove old route
+            if (map.getSource('route')) {
+                map.removeLayer('route');
+                map.removeSource('route');
+            }
+
+            // Add new route to map
+            map.addSource('route', {
+                type: 'geojson',
+                data: {
+                    type: 'Feature',
+                    properties: {},
+                    geometry: data.routes[0].geometry
+                }
+            });
+
+            map.addLayer({
+                id: 'route',
+                type: 'line',
+                source: 'route',
+                layout: {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                paint: {
+                    'line-color': '#1DB954',
+                    'line-width': 8
+                }
+            });
+
+            // Adjust map view to fit the route
+            var coordinates = data.routes[0].geometry.coordinates;
+            var bounds = coordinates.reduce(function(bounds, coord) {
+                return bounds.extend(coord);
+            }, new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
+            map.fitBounds(bounds, { padding: 20 });
+
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert("Failed to fetch route.");
+        });
+    });
+
+</script>
+</body>
+</html>
