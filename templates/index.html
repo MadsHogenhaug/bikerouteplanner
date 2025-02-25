@@ -1,218 +1,286 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8" />
-    <title>Bike Lane Route Planner</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8" />
+  <title>Bike Lane Route Planner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <!-- Mapbox GL JS -->
-    <script src="https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.js"></script>
-    <link href="https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.css" rel="stylesheet" />
+  <!-- Mapbox GL JS -->
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.css" rel="stylesheet" />
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.js"></script>
 
-    <!-- Mapbox Geocoder Plugin -->
-    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.1.1/mapbox-gl-geocoder.min.js"></script>
-    <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.1.1/mapbox-gl-geocoder.css" rel="stylesheet" />
+  <!-- Mapbox Geocoder Plugin -->
+  <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.1.1/mapbox-gl-geocoder.css" rel="stylesheet" />
+  <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.1.1/mapbox-gl-geocoder.min.js"></script>
 
-    <style>
-        body { margin: 0; padding: 0; }
-        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-        #controls {
-            position: absolute;
-            z-index: 1;
-            background: white;
-            padding: 10px;
-            margin: 10px;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        /* Style for the directions container */
-        #instructions {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            background: white;
-            padding: 10px;
-            border-radius: 4px;
-            max-height: 200px;
-            overflow-y: auto;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            z-index: 2;
-        }
-    </style>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+
+  <style>
+    /* Basic reset and fonts */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+    }
+    #map {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 100%;
+    }
+
+    /* Burger Icon */
+    #burgerIcon {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 28px;
+      color: #fff;
+      z-index: 3;
+      cursor: pointer;
+      background-color: rgba(0, 0, 0, 0.4);
+      padding: 8px 12px;
+      border-radius: 4px;
+    }
+    #burgerIcon:hover {
+      background-color: rgba(0, 0, 0, 0.6);
+    }
+
+    /* Sidebar */
+    #sidebar {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 280px;
+      height: 100%;
+      background: #1F1D2B;
+      box-shadow: -2px 0 5px rgba(0, 0, 0, 0.5);
+      transition: transform 0.3s ease;
+      transform: translateX(100%);
+      z-index: 2;
+      padding: 20px;
+      overflow-y: auto;
+      color: #fff;
+    }
+    #sidebar.open {
+      transform: translateX(0);
+    }
+    #sidebar h2,
+    #sidebar h3 {
+      margin-top: 0;
+      color: #fff;
+    }
+
+    /* Geocoder row (stacked vertically) */
+    #geocoderRow {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+    .geocoder-container {
+      position: relative;
+      overflow: visible; /* Allows dropdown to extend outside */
+      border-radius: 6px;
+      z-index: 1; 
+    }
+
+    .geocoder-container:focus-within {
+        z-index: 1001; /* Bring active geocoder and dropdown on top */
+    }
+
+
+    /* "Get Route" Button */
+    #getRoute {
+      width: 100%;
+      margin: 5px 0 20px;
+      background-color: #8B5CF6;
+      color: #fff;
+      border: none;
+      padding: 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    #getRoute:hover {
+      background-color: #7c3aed;
+    }
+
+    /* Route Options */
+    #routeOptions .option {
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+    }
+    #routeOptions .option label {
+      margin-left: 8px;
+    }
+    input[type="checkbox"] {
+      accent-color: #8B5CF6;
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+    #additionalOptions {
+      margin-top: 20px;
+    }
+
+
+  </style>
 </head>
 <body>
+  <!-- Map Container -->
+  <div id="map"></div>
 
-<div id="controls">
-    <div>
-        <label>Start Location:</label>
-        <div id="startGeocoder" class="geocoder-container"></div>
-    </div>
-    <div>
-        <label>End Location:</label>
-        <div id="endGeocoder" class="geocoder-container"></div>
+  <!-- Burger Icon -->
+  <div id="burgerIcon">&#9776;</div>
+
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <h2>Route Planner</h2>
+    <!-- Geocoder Row -->
+    <div id="geocoderRow">
+      <div id="startGeocoder" class="geocoder-container"></div>
+      <div id="endGeocoder" class="geocoder-container"></div>
     </div>
     <button id="getRoute">Get Route</button>
-</div>
-
-<div id="map"></div>
-
-
-<!-- Container for alternative routes -->
-<div id="routeAlternatives" style="display: none; position: absolute; top: 10px; right: 10px; background: white; padding: 10px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); z-index: 2; max-width: 250px;">
-    <h3>Routes Found:</h3>
-    <ul id="alternatives-list" style="list-style: none; padding-left: 0;"></ul>
+    <!-- Route Options -->
+    <div id="routeOptions">
+      <h3>Route Options</h3>
+      <div class="option">
+        <input type="checkbox" id="excludeFerry" checked>
+        <label for="excludeFerry">Exclude Ferry</label>
+      </div>
+      <div class="option">
+        <input type="checkbox" id="excludeTolls">
+        <label for="excludeTolls">Exclude Tolls</label>
+      </div>
+    </div>
+    <!-- Additional Options -->
+    <div id="additionalOptions">
+      <h3>More Options</h3>
+    </div>
   </div>
-  
+
   <script>
+    // Initialize Mapbox
     mapboxgl.accessToken = "{{ mapbox_token }}";
-    
-    // Initialize Mapbox Map
     var map = new mapboxgl.Map({
-        container: 'map', 
-        style: 'mapbox://styles/mapbox/streets-v12',
-        center: [12.5700724, 55.6867243], 
-        zoom: 12
+      container: 'map',
+      style: 'mapbox://styles/mapbox/streets-v12',
+      center: [12.5700724, 55.6867243],
+      zoom: 12
     });
-    
-    // Add zoom and rotation controls to the map.
     map.addControl(new mapboxgl.NavigationControl(), "bottom-right");
-    
-    // Create start and end geocoders
+
+    // Create Geocoder Instances
     var startGeocoder = new MapboxGeocoder({
-        accessToken: mapboxgl.accessToken,
-        mapboxgl: mapboxgl,
-        placeholder: "Enter start location"
+      accessToken: mapboxgl.accessToken,
+      mapboxgl: mapboxgl,
+      placeholder: "Start location"
     });
-    
     var endGeocoder = new MapboxGeocoder({
-        accessToken: mapboxgl.accessToken,
-        mapboxgl: mapboxgl,
-        placeholder: "Enter destination"
+      accessToken: mapboxgl.accessToken,
+      mapboxgl: mapboxgl,
+      placeholder: "Destination"
     });
-    
-    // Attach geocoders to their respective divs
+
+    // Append Geocoders to Sidebar Containers
     document.getElementById('startGeocoder').appendChild(startGeocoder.onAdd(map));
     document.getElementById('endGeocoder').appendChild(endGeocoder.onAdd(map));
-    
+
     var startCoords, endCoords;
-    
-    // Capture coordinates when a user selects a location
-    startGeocoder.on('result', function (e) {
-        startCoords = e.result.center; // [longitude, latitude]
+    startGeocoder.on('result', function(e) {
+      startCoords = e.result.center;
     });
-    
-    endGeocoder.on('result', function (e) {
-        endCoords = e.result.center; // [longitude, latitude]
+    endGeocoder.on('result', function(e) {
+      endCoords = e.result.center;
     });
-    
-    // Function to draw a selected route on the map
+
+    // Toggle Sidebar
+    document.getElementById('burgerIcon').addEventListener('click', function() {
+      document.getElementById('sidebar').classList.toggle('open');
+    });
+
+    // Draw Route on Map
     function drawRouteOnMap(route) {
-        // Remove existing route if any
-        if (map.getSource('route')) {
-            map.removeLayer('route');
-            map.removeSource('route');
+      if (map.getSource('route')) {
+        map.removeLayer('route');
+        map.removeSource('route');
+      }
+      map.addSource('route', {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          properties: {},
+          geometry: route.geometry
         }
-        
-        map.addSource('route', {
-            type: 'geojson',
-            data: {
-                type: 'Feature',
-                properties: {},
-                geometry: route.geometry
-            }
-        });
-    
-        map.addLayer({
-            id: 'route',
-            type: 'line',
-            source: 'route',
-            layout: {
-                'line-join': 'round',
-                'line-cap': 'round'
-            },
-            paint: {
-                'line-color': '#1DB954',
-                'line-width': 8
-            }
-        });
-    
-        // Adjust map view to fit the route
-        var coordinates = route.geometry.coordinates;
-        var bounds = coordinates.reduce(function(bounds, coord) {
-            return bounds.extend(coord);
-        }, new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
-        map.fitBounds(bounds, { padding: 20 });
+      });
+      map.addLayer({
+        id: 'route',
+        type: 'line',
+        source: 'route',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': '#1DB954',
+          'line-width': 8
+        }
+      });
+      // Adjust map view to the route
+      var coordinates = route.geometry.coordinates;
+      var bounds = coordinates.reduce(function(bounds, coord) {
+        return bounds.extend(coord);
+      }, new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
+      map.fitBounds(bounds, { padding: 20 });
     }
-    
-    // Handle route fetching when button is clicked
+
+    // Fetch Route on Button Click
     document.getElementById('getRoute').addEventListener('click', function() {
-        if (!startCoords || !endCoords) {
-            alert("Please select both start and end locations.");
-            return;
+      if (!startCoords || !endCoords) {
+        alert("Please select both start and end locations.");
+        return;
+      }
+      var requestBody = {
+        start: startCoords,
+        end: endCoords
+      };
+      console.log("Exclude Ferry:", document.getElementById('excludeFerry').checked);
+      console.log("Exclude Tolls:", document.getElementById('excludeTolls').checked);
+
+      fetch('/route', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("HTTP error " + response.status);
         }
-    
-        fetch('/route', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ start: startCoords, end: endCoords })
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log("API Response:", data);
-    
-            if (data.error) {
-                alert("Error: " + data.error);
-                return;
-            }
-    
-            var routes = data.routes;
-            if (!routes || routes.length === 0) {
-                alert("No routes found.");
-                return;
-            }
-
-            if (!routes || routes.length >= 2) {
-                document.getElementById('routeAlternatives').style.display = 'block';
-            }
-
-            
-            // Populate alternative routes list
-            var alternativesList = document.getElementById('alternatives-list');
-            alternativesList.innerHTML = ''; // Clear any previous alternatives
-    
-            routes.forEach((route, index) => {
-                // Convert distance from meters to km and duration from seconds to minutes
-                var distance = (route.distance / 1000).toFixed(2); // km
-                var duration = (route.duration / 60).toFixed(1); // minutes
-    
-                var li = document.createElement('li');
-                li.innerHTML = "Route " + (index + 1) + ": " + distance + " km, " + duration + " min";
-                li.style.cursor = 'pointer';
-                li.style.padding = '5px';
-                li.style.borderBottom = '1px solid #ccc';
-                li.onclick = function() {
-                    drawRouteOnMap(route);
-                };
-                alternativesList.appendChild(li);
-            });
-            
-            // Optionally, auto-select the first alternative
-            drawRouteOnMap(routes[0]);
-        })
-        .catch(error => {
-            console.error("Error fetching route:", error);
-            alert("Failed to fetch route. Check the console for details.");
-        });
+        return response.json();
+      })
+      .then(data => {
+        console.log("API Response:", data);
+        if (data.error) {
+          alert("Error: " + data.error);
+          return;
+        }
+        var routes = data.routes;
+        if (!routes || routes.length === 0) {
+          alert("No routes found.");
+          return;
+        }
+        drawRouteOnMap(routes[0]);
+      })
+      .catch(error => {
+        console.error("Error fetching route:", error);
+        alert("Failed to fetch route. See console for details.");
+      });
     });
-    </script>
-    
+  </script>
 </body>
 </html>

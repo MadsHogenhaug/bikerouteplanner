@@ -29,9 +29,7 @@ def get_route(start, end):
         "overview": "full",
         "steps": "true",
         "alternatives": "true",
-        "exclude": "ferry",
-        "annotations": "distance",
-        "overview": "full"
+        "exclude": "ferry"
     }
     response = requests.get(f"{BASE_URL}/{coordinates}", params=params)
     response.raise_for_status()
