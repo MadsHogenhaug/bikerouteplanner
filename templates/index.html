@@ -14,121 +14,205 @@
     <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.1.1/mapbox-gl-geocoder.css" rel="stylesheet" />
 
     <style>
-        /* Reset default margin and padding */
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-        }
-
-        /* Full-screen map */
-        #map {
+        body { margin: 0; padding: 0; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+        #controls {
             position: absolute;
-            top: 0;
-            bottom: 0;
-            width: 100%;
+            z-index: 1;
+            background: white;
+            padding: 10px;
+            margin: 10px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
-
-
-        
+        /* Style for the directions container */
+        #instructions {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            z-index: 2;
+        }
     </style>
 </head>
-
 <body>
 
-
+<div id="controls">
+    <div>
+        <label>Start Location:</label>
+        <div id="startGeocoder" class="geocoder-container"></div>
+    </div>
+    <div>
+        <label>End Location:</label>
+        <div id="endGeocoder" class="geocoder-container"></div>
+    </div>
+    <button id="getRoute">Get Route</button>
+</div>
 
 <div id="map"></div>
 
-<script>
-    mapboxgl.accessToken = "{{ mapbox_token }}";
 
-    // Initialize the Mapbox Map
+<!-- Container for alternative routes -->
+<div id="routeAlternatives" style="display: none; position: absolute; top: 10px; right: 10px; background: white; padding: 10px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); z-index: 2; max-width: 250px;">
+    <h3>Routes Found:</h3>
+    <ul id="alternatives-list" style="list-style: none; padding-left: 0;"></ul>
+  </div>
+  
+  <script>
+    mapboxgl.accessToken = "{{ mapbox_token }}";
+    
+    // Initialize Mapbox Map
     var map = new mapboxgl.Map({
         container: 'map', 
-        style: 'mapbox://styles/mapbox/navigation-night-v1',
-        center: [12.592202, 55.654118], 
-        zoom: 13 
+        style: 'mapbox://styles/mapbox/streets-v11',
+        center: [12.5700724, 55.6867243], 
+        zoom: 11
     });
-
-    // Add zoom and rotation controls
-    map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
-
-    // Add the control to the map.
-    map.addControl(
-        new MapboxGeocoder({
-            accessToken: mapboxgl.accessToken,
-            mapboxgl: mapboxgl
-        }),
-        'top-left'
-    );
-
-    // Handle route fetching
+    
+    // Add zoom and rotation controls to the map.
+    map.addControl(new mapboxgl.NavigationControl());
+    
+    // Create start and end geocoders
+    var startGeocoder = new MapboxGeocoder({
+        accessToken: mapboxgl.accessToken,
+        mapboxgl: mapboxgl,
+        placeholder: "Enter start location"
+    });
+    
+    var endGeocoder = new MapboxGeocoder({
+        accessToken: mapboxgl.accessToken,
+        mapboxgl: mapboxgl,
+        placeholder: "Enter destination"
+    });
+    
+    // Attach geocoders to their respective divs
+    document.getElementById('startGeocoder').appendChild(startGeocoder.onAdd(map));
+    document.getElementById('endGeocoder').appendChild(endGeocoder.onAdd(map));
+    
+    var startCoords, endCoords;
+    
+    // Capture coordinates when a user selects a location
+    startGeocoder.on('result', function (e) {
+        startCoords = e.result.center; // [longitude, latitude]
+    });
+    
+    endGeocoder.on('result', function (e) {
+        endCoords = e.result.center; // [longitude, latitude]
+    });
+    
+    // Function to draw a selected route on the map
+    function drawRouteOnMap(route) {
+        // Remove existing route if any
+        if (map.getSource('route')) {
+            map.removeLayer('route');
+            map.removeSource('route');
+        }
+        
+        map.addSource('route', {
+            type: 'geojson',
+            data: {
+                type: 'Feature',
+                properties: {},
+                geometry: route.geometry
+            }
+        });
+    
+        map.addLayer({
+            id: 'route',
+            type: 'line',
+            source: 'route',
+            layout: {
+                'line-join': 'round',
+                'line-cap': 'round'
+            },
+            paint: {
+                'line-color': '#1DB954',
+                'line-width': 8
+            }
+        });
+    
+        // Adjust map view to fit the route
+        var coordinates = route.geometry.coordinates;
+        var bounds = coordinates.reduce(function(bounds, coord) {
+            return bounds.extend(coord);
+        }, new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
+        map.fitBounds(bounds, { padding: 20 });
+    }
+    
+    // Handle route fetching when button is clicked
     document.getElementById('getRoute').addEventListener('click', function() {
-        var start = startGeocoder.getProximity();
-        var end = endGeocoder.getProximity();
-
-        if (!start || !end) {
+        if (!startCoords || !endCoords) {
             alert("Please select both start and end locations.");
             return;
         }
-
+    
         fetch('/route', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ start: [start.longitude, start.latitude], end: [end.longitude, end.latitude] })
+            body: JSON.stringify({ start: startCoords, end: endCoords })
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log("API Response:", data);
+    
             if (data.error) {
                 alert("Error: " + data.error);
                 return;
             }
-
-            // Remove old route
-            if (map.getSource('route')) {
-                map.removeLayer('route');
-                map.removeSource('route');
+    
+            var routes = data.routes;
+            if (!routes || routes.length === 0) {
+                alert("No routes found.");
+                return;
             }
 
-            // Add new route to map
-            map.addSource('route', {
-                type: 'geojson',
-                data: {
-                    type: 'Feature',
-                    properties: {},
-                    geometry: data.routes[0].geometry
-                }
+            if (!routes || routes.length >= 2) {
+                document.getElementById('routeAlternatives').style.display = 'block';
+            }
+
+            
+            // Populate alternative routes list
+            var alternativesList = document.getElementById('alternatives-list');
+            alternativesList.innerHTML = ''; // Clear any previous alternatives
+    
+            routes.forEach((route, index) => {
+                // Convert distance from meters to km and duration from seconds to minutes
+                var distance = (route.distance / 1000).toFixed(2); // km
+                var duration = (route.duration / 60).toFixed(1); // minutes
+    
+                var li = document.createElement('li');
+                li.innerHTML = "Route " + (index + 1) + ": " + distance + " km, " + duration + " min";
+                li.style.cursor = 'pointer';
+                li.style.padding = '5px';
+                li.style.borderBottom = '1px solid #ccc';
+                li.onclick = function() {
+                    drawRouteOnMap(route);
+                };
+                alternativesList.appendChild(li);
             });
-
-            map.addLayer({
-                id: 'route',
-                type: 'line',
-                source: 'route',
-                layout: {
-                    'line-join': 'round',
-                    'line-cap': 'round'
-                },
-                paint: {
-                    'line-color': '#1DB954',
-                    'line-width': 8
-                }
-            });
-
-            // Adjust map view to fit the route
-            var coordinates = data.routes[0].geometry.coordinates;
-            var bounds = coordinates.reduce(function(bounds, coord) {
-                return bounds.extend(coord);
-            }, new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
-            map.fitBounds(bounds, { padding: 20 });
-
+            
+            // Optionally, auto-select the first alternative
+            drawRouteOnMap(routes[0]);
         })
         .catch(error => {
-            console.error('Error:', error);
-            alert("Failed to fetch route.");
+            console.error("Error fetching route:", error);
+            alert("Failed to fetch route. Check the console for details.");
         });
     });
-
-</script>
+    </script>
+    
 </body>
 </html>

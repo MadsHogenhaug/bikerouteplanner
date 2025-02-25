@@ -27,7 +27,11 @@ def get_route(start, end):
         "access_token": MAPBOX_TOKEN,
         "geometries": "geojson",
         "overview": "full",
-        "steps": "true"
+        "steps": "true",
+        "alternatives": "true",
+        "exclude": "ferry",
+        "annotations": "distance",
+        "overview": "full"
     }
     response = requests.get(f"{BASE_URL}/{coordinates}", params=params)
     response.raise_for_status()
