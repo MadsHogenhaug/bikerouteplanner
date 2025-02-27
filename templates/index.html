@@ -17,12 +17,18 @@
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
 
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  
   <!-- External CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
   <!-- Map Container -->
   <div id="map"></div>
+
+  <!-- "Search This Area" Button: positioned at the top center -->
+  <button id="searchThisArea" class="search-area-btn">Search This Area</button>
 
   <!-- Burger Icon -->
   <div id="burgerIcon">&#9776;</div>
@@ -51,11 +57,10 @@
       <div id="additionalOptions">
         <h3>More Options</h3>
         <button id="showHotels">Show Hotels</button>
-        <button id="showRestaurants">Show Restaurants</button>
+        <!-- Removed the "Search This Area" button from here -->
       </div>
     </div>
   </div>
-
 
   <!-- External JavaScript -->
   <script>

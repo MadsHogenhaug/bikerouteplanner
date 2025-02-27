@@ -171,4 +171,30 @@ input[type="checkbox"] {
   white-space: nowrap; /* Prevents text from wrapping */
 }
 
+#showHotels:hover,
+#showRestaurants:hover {
+  background-color: #7c3aed;
+}
+
+/* "Search This Area" Button (Google Maps–style) */
+.search-area-btn {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  background-color: #fff;
+  color: #000;
+  border: 1px solid #ccc;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  display: none; /* Hidden by default */
+  cursor: pointer;
+}
+
+.search-area-btn:hover {
+  background-color: #f0f0f0;
+}
 

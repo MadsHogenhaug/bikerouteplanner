@@ -46,43 +46,111 @@ document.getElementById('closeBtn').addEventListener('click', function() {
   document.getElementById('burgerIcon').style.display = 'block';
 }); 
 
-// When the map loads, add the hotels vector source and layer from your custom tileset
-map.on('load', function() {
-  // Add the hotels vector source (replace 'your_username.hotels' with your actual Tileset ID)
-  map.addSource('denmark_hotels', {
-    type: 'vector',
-    url: 'mapbox://madshogenhaug.3hen1icg'
-  });
+// Global state for hotels layer
+var hotelsLayerVisible = false;
+var lastSearchedBounds = null;
 
-  // Add a layer to display the hotels as red circles, starting hidden
-  map.addLayer({
-    id: 'denmark_hotels_layer',
-    type: 'circle',
-    source: 'denmark_hotels',
-    'source-layer': 'denmark_hotels-a888kw', 
-    paint: {
-      'circle-radius': 6,
-      'circle-color': '#FF0000'
-    },
-    layout: {
-      'visibility': 'none'
-    }
-  });
-});
+// Helper function to compare bounds (with a small tolerance)
+function boundsDifferent(bounds1, bounds2) {
+  var tolerance = 0.0001; // adjust as needed
+  return (Math.abs(bounds1.getNorth() - bounds2.getNorth()) > tolerance ||
+          Math.abs(bounds1.getSouth() - bounds2.getSouth()) > tolerance ||
+          Math.abs(bounds1.getEast() - bounds2.getEast()) > tolerance ||
+          Math.abs(bounds1.getWest() - bounds2.getWest()) > tolerance);
+}
 
-// Toggle hotels layer visibility on button click
+// "Show Hotels" button toggles the hotels layer on/off.
 document.getElementById('showHotels').addEventListener('click', function() {
-  var visibility = map.getLayoutProperty('denmark_hotels_layer', 'visibility');
-  if (visibility === 'visible') {
-    map.setLayoutProperty('denmark_hotels_layer', 'visibility', 'none');
-    this.textContent = 'Show Hotels';
-  } else {
-    map.setLayoutProperty('denmark_hotels_layer', 'visibility', 'visible');
+  if (!hotelsLayerVisible) {
+    // Get current bounds and build a bounding polygon
+    var currentBounds = map.getBounds();
+    var bboxPolygon = {
+      type: 'Polygon',
+      coordinates: [[
+        [currentBounds.getWest(), currentBounds.getSouth()],
+        [currentBounds.getEast(), currentBounds.getSouth()],
+        [currentBounds.getEast(), currentBounds.getNorth()],
+        [currentBounds.getWest(), currentBounds.getNorth()],
+        [currentBounds.getWest(), currentBounds.getSouth()]
+      ]]
+    };
+
+    // Add the hotels vector source and layer (using your tileset)
+    map.addSource('denmark_hotels', {
+      type: 'vector',
+      url: 'mapbox://madshogenhaug.3hen1icg'
+    });
+    map.addLayer({
+      id: 'denmark_hotels_layer',
+      type: 'circle',
+      source: 'denmark_hotels',
+      'source-layer': 'denmark_hotels-a888kw', // Adjust if your source layer name is different
+      paint: {
+        'circle-radius': 6,
+        'circle-color': '#FF0000'
+      },
+      filter: ['within', bboxPolygon]  // show only hotels within current bounds
+    });
+    hotelsLayerVisible = true;
+    lastSearchedBounds = currentBounds;
     this.textContent = 'Hide Hotels';
+  } else {
+    // Remove hotels layer and source
+    if (map.getLayer('denmark_hotels_layer')) {
+      map.removeLayer('denmark_hotels_layer');
+    }
+    if (map.getSource('denmark_hotels')) {
+      map.removeSource('denmark_hotels');
+    }
+    hotelsLayerVisible = false;
+    lastSearchedBounds = null;
+    this.textContent = 'Show Hotels';
+    // Hide the "Search This Area" button
+    document.getElementById('searchThisArea').style.display = 'none';
   }
 });
 
-// Draw Route on Map
+// Listen for moveend events only if hotels are visible to decide if we should prompt "Search This Area"
+map.on('moveend', function() {
+  if (hotelsLayerVisible) {
+    var currentBounds = map.getBounds();
+    // If the new bounds differ from the last searched bounds, show the "Search This Area" button.
+    if (!lastSearchedBounds || boundsDifferent(lastSearchedBounds, currentBounds)) {
+      document.getElementById('searchThisArea').style.display = 'block';
+    } else {
+      document.getElementById('searchThisArea').style.display = 'none';
+    }
+  }
+});
+
+document.getElementById('searchThisArea').addEventListener('click', function() {
+  // Check if the user is zoomed in enough
+  var currentZoom = map.getZoom();
+  var minZoomThreshold = 9; // Adjust this value as needed
+  if (currentZoom < minZoomThreshold) {
+    alert("You're zoomed out too far. Please zoom in further to search this area.");
+    return;
+  }
+  
+  // Proceed if zoom level is acceptable
+  var currentBounds = map.getBounds();
+  var bboxPolygon = {
+    type: 'Polygon',
+    coordinates: [[
+      [currentBounds.getWest(), currentBounds.getSouth()],
+      [currentBounds.getEast(), currentBounds.getSouth()],
+      [currentBounds.getEast(), currentBounds.getNorth()],
+      [currentBounds.getWest(), currentBounds.getNorth()],
+      [currentBounds.getWest(), currentBounds.getSouth()]
+    ]]
+  };
+  map.setFilter('denmark_hotels_layer', ['within', bboxPolygon]);
+  lastSearchedBounds = currentBounds;
+  this.style.display = 'none';
+});
+
+
+// Draw Route on Map (unchanged)
 function drawRouteOnMap(route) {
   if (map.getSource('route')) {
     map.removeLayer('route');
@@ -117,7 +185,7 @@ function drawRouteOnMap(route) {
   map.fitBounds(bounds, { padding: 20 });
 }
 
-// Fetch Route on Button Click
+// Fetch Route on Button Click (unchanged)
 document.getElementById('getRoute').addEventListener('click', function() {
   if (!startCoords || !endCoords) {
     alert("Please select both start and end locations.");
