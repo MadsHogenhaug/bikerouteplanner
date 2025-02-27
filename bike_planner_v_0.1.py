@@ -8,7 +8,7 @@ app = Flask(__name__)
 
 ### CONFIGURATION ###
 config = configparser.ConfigParser()
-config.read('/home/mads/Desktop/bikeplanner/config.ini')
+config.read('config/config.ini')
 
 MAPBOX_TOKEN = config['DEFAULT']['MAPBOX_TOKEN']
 BASE_URL = "https://api.mapbox.com/directions/v5/mapbox/cycling"
