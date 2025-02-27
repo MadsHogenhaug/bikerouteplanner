@@ -46,6 +46,42 @@ document.getElementById('closeBtn').addEventListener('click', function() {
   document.getElementById('burgerIcon').style.display = 'block';
 }); 
 
+// When the map loads, add the hotels vector source and layer from your custom tileset
+map.on('load', function() {
+  // Add the hotels vector source (replace 'your_username.hotels' with your actual Tileset ID)
+  map.addSource('denmark_hotels', {
+    type: 'vector',
+    url: 'mapbox://madshogenhaug.3hen1icg'
+  });
+
+  // Add a layer to display the hotels as red circles, starting hidden
+  map.addLayer({
+    id: 'denmark_hotels_layer',
+    type: 'circle',
+    source: 'denmark_hotels',
+    'source-layer': 'denmark_hotels-a888kw', 
+    paint: {
+      'circle-radius': 6,
+      'circle-color': '#FF0000'
+    },
+    layout: {
+      'visibility': 'none'
+    }
+  });
+});
+
+// Toggle hotels layer visibility on button click
+document.getElementById('showHotels').addEventListener('click', function() {
+  var visibility = map.getLayoutProperty('denmark_hotels_layer', 'visibility');
+  if (visibility === 'visible') {
+    map.setLayoutProperty('denmark_hotels_layer', 'visibility', 'none');
+    this.textContent = 'Show Hotels';
+  } else {
+    map.setLayoutProperty('denmark_hotels_layer', 'visibility', 'visible');
+    this.textContent = 'Hide Hotels';
+  }
+});
+
 // Draw Route on Map
 function drawRouteOnMap(route) {
   if (map.getSource('route')) {
@@ -84,48 +120,48 @@ function drawRouteOnMap(route) {
 // Fetch Route on Button Click
 document.getElementById('getRoute').addEventListener('click', function() {
   if (!startCoords || !endCoords) {
-      alert("Please select both start and end locations.");
-      return;
+    alert("Please select both start and end locations.");
+    return;
   }
 
   // Build an array for exclusions based on checkbox values
   let exclusions = [];
   if (document.getElementById('excludeFerry').checked) {
-      exclusions.push("ferry");
+    exclusions.push("ferry");
   }
 
   // Prepare the request body including the exclusions
   var requestBody = {
-      start: startCoords,
-      end: endCoords,
-      exclude: exclusions
+    start: startCoords,
+    end: endCoords,
+    exclude: exclusions
   };
 
   fetch('/route', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody)
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(requestBody)
   })
   .then(response => {
-      if (!response.ok) {
-          throw new Error("HTTP error " + response.status);
-      }
-      return response.json();
+    if (!response.ok) {
+      throw new Error("HTTP error " + response.status);
+    }
+    return response.json();
   })
   .then(data => {
-      if (data.error) {
-          alert("Error: " + data.error);
-          return;
-      }
-      var routes = data.routes;
-      if (!routes || routes.length === 0) {
-          alert("No routes found.");
-          return;
-      }
-      drawRouteOnMap(routes[0]);
+    if (data.error) {
+      alert("Error: " + data.error);
+      return;
+    }
+    var routes = data.routes;
+    if (!routes || routes.length === 0) {
+      alert("No routes found.");
+      return;
+    }
+    drawRouteOnMap(routes[0]);
   })
   .catch(error => {
-      console.error("Error fetching route:", error);
-      alert("Failed to fetch route. See console for details.");
+    console.error("Error fetching route:", error);
+    alert("Failed to fetch route. See console for details.");
   });
 });

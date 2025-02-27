@@ -142,7 +142,33 @@ input[type="checkbox"] {
   cursor: pointer;
 }
 
-/* Additional Options Section */
 #additionalOptions {
-  margin-top: 20px;
+  display: flex;
+  flex-direction: column; /* Stack elements vertically */
+  gap: 10px; /* Space between heading and buttons */
+  width: 100%;
 }
+
+#buttonContainer {
+  display: flex;
+  gap: 10px; /* Space between buttons */
+  justify-content: space-between; /* Ensures equal spacing */
+  align-items: center; /* Aligns buttons vertically */
+  width: 100%;
+}
+
+#showHotels,
+#showRestaurants {
+  flex: 1; /* Makes both buttons take up equal space */
+  background-color: #8B5CF6;
+  color: #fff;
+  border: none;
+  padding: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap; /* Prevents text from wrapping */
+}
+
+
