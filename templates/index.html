@@ -19,7 +19,6 @@
 
   <!-- External CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-
 </head>
 <body>
   <!-- Map Container -->
@@ -30,26 +29,31 @@
 
   <!-- Sidebar -->
   <div id="sidebar">
-    <h2>Route Planner</h2>
-    <!-- Geocoder Row -->
-    <div id="geocoderRow">
-      <div id="startGeocoder" class="geocoder-container"></div>
-      <div id="endGeocoder" class="geocoder-container"></div>
+    <span id="closeBtn" class="close-btn">&#x2715;</span>
+    <div class="sidebar-header">
+      <h2>Route Planner</h2>
     </div>
-    <button id="getRoute">Get Route</button>
-    <!-- Route Options -->
-    <div id="routeOptions">
-      <h3>Route Options</h3>
-      <div class="option">
-        <input type="checkbox" id="excludeFerry" checked>
-        <label for="excludeFerry">Exclude Ferry</label>
+    
+    <!-- Wrap everything else in a container -->
+    <div id="sidebarContents">
+      <div id="geocoderRow">
+        <div id="startGeocoder" class="geocoder-container"></div>
+        <div id="endGeocoder" class="geocoder-container"></div>
+      </div>
+      <button id="getRoute">Get Route</button>
+      <div id="routeOptions">
+        <h3>Route Options</h3>
+        <div class="option">
+          <input type="checkbox" id="excludeFerry" checked>
+          <label for="excludeFerry">Exclude Ferry</label>
+        </div>
+      </div>
+      <div id="additionalOptions">
+        <h3>More Options</h3>
       </div>
     </div>
-    <!-- Additional Options -->
-    <div id="additionalOptions">
-      <h3>More Options</h3>
-    </div>
   </div>
+
 
   <!-- External JavaScript -->
   <script>

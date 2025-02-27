@@ -32,10 +32,19 @@ endGeocoder.on('result', function(e) {
   endCoords = e.result.center;
 });
 
-// Toggle Sidebar
+// Open Sidebar with Burger Icon
 document.getElementById('burgerIcon').addEventListener('click', function() {
-  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar').classList.add('open');
+  // Hide the burger icon when sidebar is open
+  this.style.display = 'none';
 });
+
+// Close Sidebar with Red Cross Button
+document.getElementById('closeBtn').addEventListener('click', function() {
+  document.getElementById('sidebar').classList.remove('open');
+  // Show the burger icon again when sidebar closes
+  document.getElementById('burgerIcon').style.display = 'block';
+}); 
 
 // Draw Route on Map
 function drawRouteOnMap(route) {
