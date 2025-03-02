@@ -52,7 +52,7 @@ var locationsLayerVisible = false;
 document.getElementById('showHotels').addEventListener('click', function() {
   if (!locationsLayerVisible) {
     // Add the GeoJSON source for locations from your local file
-    map.addSource("locations", {
+    map.addSource("hotels", {
       type: "geojson",
       data: "/static/data/denmark_hotels.geojson",
       cluster: true,
@@ -63,7 +63,7 @@ document.getElementById('showHotels').addEventListener('click', function() {
     map.addLayer({
       id: "clusters",
       type: "circle",
-      source: "locations",
+      source: "hotels",
       filter: ["has", "point_count"],
       paint: {
         'circle-color': [
@@ -90,7 +90,7 @@ document.getElementById('showHotels').addEventListener('click', function() {
     map.addLayer({
       id: 'cluster-count',
       type: 'symbol',
-      source: 'locations',
+      source: 'hotels',
       filter: ['has', 'point_count'],
       layout: {
         'text-field': ['get', 'point_count_abbreviated'],
@@ -102,7 +102,7 @@ document.getElementById('showHotels').addEventListener('click', function() {
     map.addLayer({
       id: 'unclustered-point',
       type: 'circle',
-      source: 'locations',
+      source: 'hotels',
       filter: ['!', ['has', 'point_count']],
       paint: {
         'circle-color': '#11b4da',
@@ -127,8 +127,8 @@ document.getElementById('showHotels').addEventListener('click', function() {
       map.removeLayer("unclustered-point");
     }
     // Remove the source if it exists
-    if (map.getSource("locations")) {
-      map.removeSource("locations");
+    if (map.getSource("hotels")) {
+      map.removeSource("hotels");
     }
 
     // Update button text to indicate that hotels can be shown again
@@ -137,13 +137,154 @@ document.getElementById('showHotels').addEventListener('click', function() {
   }
 });
 
+// Global state for shelters layer visibility
+var sheltersLayerVisible = false;
+
+document.getElementById('showShelters').addEventListener('click', function() {
+  if (!sheltersLayerVisible) {
+    // Add the GeoJSON source for shelters
+    map.addSource("shelters", {
+      type: "geojson",
+      data: "/static/data/denmark_shelters.geojson",
+      cluster: true,
+      clusterMaxZoom: 15
+    });
+    
+    // Add clustered shelters layer
+    map.addLayer({
+      id: "shelter-clusters",
+      type: "circle",
+      source: "shelters",
+      filter: ["has", "point_count"],
+      paint: {
+        'circle-color': [
+          'step',
+          ['get', 'point_count'],
+          '#FFA500', // Base color for clusters
+          100,
+          '#FFD700', // Mid-range clusters
+          750,
+          '#FF8C00'  // Larger clusters
+        ],
+        'circle-radius': [
+          'step',
+          ['get', 'point_count'],
+          20,
+          100,
+          30,
+          750,
+          40
+        ]
+      }
+    });
+
+    // Add cluster count labels for shelters
+    map.addLayer({
+      id: 'shelter-cluster-count',
+      type: 'symbol',
+      source: 'shelters',
+      filter: ['has', 'point_count'],
+      layout: {
+        'text-field': ['get', 'point_count_abbreviated'],
+        'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+        'text-size': 12
+      }
+    });
+
+    // Add unclustered shelter points layer
+    map.addLayer({
+      id: 'shelter-unclustered-point',
+      type: 'circle',
+      source: 'shelters',
+      filter: ['!', ['has', 'point_count']],
+      paint: {
+        'circle-color': '#FF4500',
+        'circle-radius': 4,
+        'circle-stroke-width': 1,
+        'circle-stroke-color': '#fff'
+      }
+    });
+
+    // Update button text
+    this.textContent = "Hide Shelters";
+    sheltersLayerVisible = true;
+  } else {
+    // Remove the shelters layers if they exist
+    if (map.getLayer("shelter-clusters")) {
+      map.removeLayer("shelter-clusters");
+    }
+    if (map.getLayer("shelter-cluster-count")) {
+      map.removeLayer("shelter-cluster-count");
+    }
+    if (map.getLayer("shelter-unclustered-point")) {
+      map.removeLayer("shelter-unclustered-point");
+    }
+    // Remove the shelters source if it exists
+    if (map.getSource("shelters")) {
+      map.removeSource("shelters");
+    }
+    // Update button text
+    this.textContent = "Show Shelters";
+    sheltersLayerVisible = false;
+  }
+});
+
+// Inspect a shelter cluster on click
+map.on('click', 'shelter-clusters', (e) => {
+  const features = map.queryRenderedFeatures(e.point, {
+    layers: ['shelter-clusters']
+  });
+  const clusterId = features[0].properties.cluster_id;
+  map.getSource('shelters').getClusterExpansionZoom(
+    clusterId,
+    (err, zoom) => {
+      if (err) return;
+      map.easeTo({
+        center: features[0].geometry.coordinates,
+        zoom: zoom
+      });
+    }
+  );
+});
+
+// Change cursor to pointer when hovering over shelter clusters
+map.on('mouseenter', 'shelter-clusters', () => {
+  map.getCanvas().style.cursor = 'pointer';
+});
+map.on('mouseleave', 'shelter-clusters', () => {
+  map.getCanvas().style.cursor = '';
+});
+
+// Open a popup when clicking an unclustered shelter point
+map.on('click', 'shelter-unclustered-point', (e) => {
+  const coordinates = e.features[0].geometry.coordinates.slice();
+  const name = e.features[0].properties.name;
+  const website = e.features[0].properties.website;
+  const websiteDisplay = website ? `<a href="${website}" target="_blank">${website}</a>` : "No website available";
+
+  // Adjust coordinates for maps with multiple copies of features.
+  if (['mercator', 'equirectangular'].includes(map.getProjection().name)) {
+    while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+      coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+    }
+  }
+
+  new mapboxgl.Popup()
+    .setLngLat(coordinates)
+    .setHTML(`<strong>${name}</strong><br>${websiteDisplay}`)
+    .addTo(map);
+});
+
+
+
+
 // Inspect a cluster on click
 map.on('click', 'clusters', (e) => {
   const features = map.queryRenderedFeatures(e.point, {
     layers: ['clusters']
   });
   const clusterId = features[0].properties.cluster_id;
-  map.getSource('locations').getClusterExpansionZoom(
+  map.getSource('hotels').getClusterExpansionZoom(
     clusterId,
     (err, zoom) => {
       if (err) return;
@@ -225,6 +366,24 @@ function drawRouteOnMap(route) {
   map.fitBounds(bounds, { padding: 20 });
 }
 
+// Toggle visibility of "Route Options" section
+document.getElementById("routeOptionsToggle").addEventListener("click", function () {
+  let content = document.getElementById("routeOptionsContent");
+  let arrow = document.getElementById("routeOptionsArrow");
+  
+  content.classList.toggle("hidden");
+  arrow.classList.toggle("open"); // Rotate arrow when expanded
+});
+
+// Toggle visibility of Other Options section
+document.getElementById("additionalOptionsToggle").addEventListener("click", function () {
+  let content = document.getElementById("additionalOptionsContent");
+  let arrow = document.getElementById("additionalOptionsArrow");
+
+  content.classList.toggle("hidden"); // Show/hide content
+  arrow.classList.toggle("open"); // Rotate arrow when expanded
+});
+
 // Fetch Route on Button Click (unchanged)
 document.getElementById('getRoute').addEventListener('click', function() {
   if (!startCoords || !endCoords) {
@@ -273,3 +432,4 @@ document.getElementById('getRoute').addEventListener('click', function() {
     alert("Failed to fetch route. See console for details.");
   });
 });
+  

@@ -4,7 +4,7 @@ body {
   padding: 0;
   font-family: 'Inter', sans-serif;
   background-color: #F5F5F5; /* Soft off-white background */
-  color: #333333; /* Dark gray text for contrast */
+  color: #333333;            /* Dark gray text for contrast */
 }
 
 /* Map container */
@@ -82,14 +82,12 @@ body {
   flex-direction: column;
   gap: 12px;
   width: 100%;
-  
 }
 
 /* Geocoder input styling */
 .geocoder-container .mapboxgl-ctrl-geocoder {
   width: 100%;
 }
-
 
 .geocoder-container {
   position: relative;
@@ -125,11 +123,49 @@ body {
   margin-bottom: 15px;
 }
 
-#routeOptions h3 {
-  margin-top: 0;
-  color: #333333;
+/* 
+   Unify the style for both Route Options and More Options headings:
+   - Full width
+   - Arrow pinned to the right 
+   - Text pinned to the left
+*/
+#routeOptions h3,
+#additionalOptions h3 {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between; 
+  width: 100%;
+  margin: 0;
+  padding: 5px 0;
 }
 
+/* Optional hover effect for both headings */
+#routeOptions h3:hover,
+#additionalOptions h3:hover {
+  color: #007bff;
+}
+
+/* Arrow styling for Route Options */
+#routeOptionsArrow {
+  transition: transform 0.3s ease;
+  display: inline-block; /* Needed for rotation */
+}
+
+#routeOptionsArrow.open {
+  transform: rotate(90deg); /* Rotates when expanded */
+}
+
+/* Collapsible content for Route Options */
+#routeOptionsContent {
+  display: block; /* If you want it open by default, otherwise use 'none' */
+}
+
+#routeOptionsContent.hidden {
+  display: none;
+}
+
+/* Individual route option rows (checkbox + label) */
 #routeOptions .option {
   margin-bottom: 10px;
   display: flex;
@@ -141,6 +177,7 @@ body {
   color: #555555;
 }
 
+/* Checkboxes */
 input[type="checkbox"] {
   accent-color: #64B5F6;
   width: 18px;
@@ -149,13 +186,27 @@ input[type="checkbox"] {
 }
 
 /* Additional Options */
-#additionalOptions {
+#additionalOptionsContent {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 100%;
+  flex-direction: column; /* Stacks buttons vertically */
+  gap: 10px;             /* Space between buttons */
 }
 
+#additionalOptionsContent.hidden {
+  display: none;
+}
+
+/* Arrow styling for More Options */
+#additionalOptionsArrow {
+  transition: transform 0.3s ease;
+  display: inline-block;
+}
+
+#additionalOptionsArrow.open {
+  transform: rotate(90deg);
+}
+
+/* Container for optional extra buttons (if needed) */
 #buttonContainer {
   display: flex;
   gap: 10px;
@@ -164,8 +215,9 @@ input[type="checkbox"] {
   width: 100%;
 }
 
+/* Buttons for hotels and shelters */
 #showHotels,
-#showRestaurants {
+#showShelters {
   flex: 1;
   background-color: #64B5F6;
   color: #FFFFFF;
@@ -175,31 +227,10 @@ input[type="checkbox"] {
   cursor: pointer;
   font-weight: 600;
   text-align: center;
+  width: 100%;
 }
 
 #showHotels:hover,
-#showRestaurants:hover {
+#showShelters:hover {
   background-color: #42A5F5;
-}
-
-/* "Search This Area" Button */
-.search-area-btn {
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 4;
-  background-color: #FFFFFF;
-  color: #333333;
-  border: 1px solid #CCCCCC;
-  padding: 8px 12px;
-  border-radius: 4px;
-  font-weight: 600;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  display: none;
-  cursor: pointer;
-}
-
-.search-area-btn:hover {
-  background-color: #F0F0F0;
 }
