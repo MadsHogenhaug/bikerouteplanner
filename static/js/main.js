@@ -4,7 +4,7 @@ var map = new mapboxgl.Map({
   container: 'map',
   style: 'mapbox://styles/mapbox/streets-v12',
   center: [12.5700724, 55.6867243],
-  zoom: 15
+  zoom: 10
 });
 map.addControl(new mapboxgl.NavigationControl(), "bottom-right");
 
@@ -260,6 +260,8 @@ map.on('click', 'shelter-unclustered-point', (e) => {
   const coordinates = e.features[0].geometry.coordinates.slice();
   const name = e.features[0].properties.name;
   const website = e.features[0].properties.website;
+  const coords_lng = coordinates[0]; // Longitude
+  const coords_lat = coordinates[1]; // Latitude
   const websiteDisplay = website ? `<a href="${website}" target="_blank">${website}</a>` : "No website available";
 
   // Adjust coordinates for maps with multiple copies of features.
@@ -271,9 +273,25 @@ map.on('click', 'shelter-unclustered-point', (e) => {
 
   new mapboxgl.Popup()
     .setLngLat(coordinates)
-    .setHTML(`<strong>${name}</strong><br>${websiteDisplay}`)
+    .setHTML(`
+      <strong>${name}</strong><br>
+      ${websiteDisplay}<br>
+      <a href="#" onclick="setDestination([${coords_lng}, ${coords_lat}]); return false;">Set as Destination</a>
+    `)
     .addTo(map);
 });
+
+// Function to update the destination in the sidepanel's route planner
+function setDestination(coords) {
+  // Store the destination coordinates for later use in routing
+  endCoords = coords;
+  
+  // Update the destination geocoder input with the coordinates.
+  // Here, we convert the coordinates to a string, e.g., "55.68672, 12.57007"
+  // Adjust the order if needed (lat, lng vs. lng, lat) depending on your preference.
+  endGeocoder.setInput(`${coords[1].toFixed(5)}, ${coords[0].toFixed(5)}`);
+}
+
 
 
 
@@ -432,4 +450,3 @@ document.getElementById('getRoute').addEventListener('click', function() {
     alert("Failed to fetch route. See console for details.");
   });
 });
-  

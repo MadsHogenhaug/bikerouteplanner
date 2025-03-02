@@ -96,9 +96,9 @@ body {
   z-index: 1;
 }
 
-.geocoder-container:focus-within {
+/* .geocoder-container:focus-within {
   z-index: 1001;
-}
+} */
 
 /* Get Route Button */
 #getRoute {
