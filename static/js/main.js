@@ -4,7 +4,7 @@ var map = new mapboxgl.Map({
   container: 'map',
   style: 'mapbox://styles/mapbox/streets-v12',
   center: [12.5700724, 55.6867243],
-  zoom: 12
+  zoom: 15
 });
 map.addControl(new mapboxgl.NavigationControl(), "bottom-right");
 
@@ -44,110 +44,150 @@ document.getElementById('closeBtn').addEventListener('click', function() {
   document.getElementById('sidebar').classList.remove('open');
   // Show the burger icon again when sidebar closes
   document.getElementById('burgerIcon').style.display = 'block';
-}); 
+});
 
-// Global state for hotels layer
-var hotelsLayerVisible = false;
-var lastSearchedBounds = null;
+// Global state for locations layer
+var locationsLayerVisible = false;
 
-// Helper function to compare bounds (with a small tolerance)
-function boundsDifferent(bounds1, bounds2) {
-  var tolerance = 0.0001; // adjust as needed
-  return (Math.abs(bounds1.getNorth() - bounds2.getNorth()) > tolerance ||
-          Math.abs(bounds1.getSouth() - bounds2.getSouth()) > tolerance ||
-          Math.abs(bounds1.getEast() - bounds2.getEast()) > tolerance ||
-          Math.abs(bounds1.getWest() - bounds2.getWest()) > tolerance);
-}
-
-// "Show Hotels" button toggles the hotels layer on/off.
 document.getElementById('showHotels').addEventListener('click', function() {
-  if (!hotelsLayerVisible) {
-    // Get current bounds and build a bounding polygon
-    var currentBounds = map.getBounds();
-    var bboxPolygon = {
-      type: 'Polygon',
-      coordinates: [[
-        [currentBounds.getWest(), currentBounds.getSouth()],
-        [currentBounds.getEast(), currentBounds.getSouth()],
-        [currentBounds.getEast(), currentBounds.getNorth()],
-        [currentBounds.getWest(), currentBounds.getNorth()],
-        [currentBounds.getWest(), currentBounds.getSouth()]
-      ]]
-    };
-
-    // Add the hotels vector source and layer (using your tileset)
-    map.addSource('denmark_hotels', {
-      type: 'vector',
-      url: 'mapbox://madshogenhaug.3hen1icg'
+  if (!locationsLayerVisible) {
+    // Add the GeoJSON source for locations from your local file
+    map.addSource("locations", {
+      type: "geojson",
+      data: "/static/data/denmark_hotels.geojson",
+      cluster: true,
+      clusterMaxZoom: 15
     });
+    
+    // Add the clustered layers
     map.addLayer({
-      id: 'denmark_hotels_layer',
-      type: 'circle',
-      source: 'denmark_hotels',
-      'source-layer': 'denmark_hotels-a888kw', // Adjust if your source layer name is different
+      id: "clusters",
+      type: "circle",
+      source: "locations",
+      filter: ["has", "point_count"],
       paint: {
-        'circle-radius': 6,
-        'circle-color': '#FF0000'
-      },
-      filter: ['within', bboxPolygon]  // show only hotels within current bounds
+        'circle-color': [
+          'step',
+          ['get', 'point_count'],
+          '#51bbd6',
+          100,
+          '#f1f075',
+          750,
+          '#f28cb1'
+        ],
+        'circle-radius': [
+          'step',
+          ['get', 'point_count'],
+          20,
+          100,
+          30,
+          750,
+          40
+        ]
+      }
     });
-    hotelsLayerVisible = true;
-    lastSearchedBounds = currentBounds;
-    this.textContent = 'Hide Hotels';
+
+    map.addLayer({
+      id: 'cluster-count',
+      type: 'symbol',
+      source: 'locations',
+      filter: ['has', 'point_count'],
+      layout: {
+        'text-field': ['get', 'point_count_abbreviated'],
+        'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+        'text-size': 12
+      }
+    });
+
+    map.addLayer({
+      id: 'unclustered-point',
+      type: 'circle',
+      source: 'locations',
+      filter: ['!', ['has', 'point_count']],
+      paint: {
+        'circle-color': '#11b4da',
+        'circle-radius': 4,
+        'circle-stroke-width': 1,
+        'circle-stroke-color': '#fff'
+      }
+    });
+
+    // Update button text to indicate that clicking again will hide the hotels
+    this.textContent = "Hide Hotels";
+    locationsLayerVisible = true;
   } else {
-    // Remove hotels layer and source
-    if (map.getLayer('denmark_hotels_layer')) {
-      map.removeLayer('denmark_hotels_layer');
+    // Remove the individual layers if they exist
+    if (map.getLayer("clusters")) {
+      map.removeLayer("clusters");
     }
-    if (map.getSource('denmark_hotels')) {
-      map.removeSource('denmark_hotels');
+    if (map.getLayer("cluster-count")) {
+      map.removeLayer("cluster-count");
     }
-    hotelsLayerVisible = false;
-    lastSearchedBounds = null;
-    this.textContent = 'Show Hotels';
-    // Hide the "Search This Area" button
-    document.getElementById('searchThisArea').style.display = 'none';
+    if (map.getLayer("unclustered-point")) {
+      map.removeLayer("unclustered-point");
+    }
+    // Remove the source if it exists
+    if (map.getSource("locations")) {
+      map.removeSource("locations");
+    }
+
+    // Update button text to indicate that hotels can be shown again
+    this.textContent = "Show Hotels";
+    locationsLayerVisible = false;
   }
 });
 
-// Listen for moveend events only if hotels are visible to decide if we should prompt "Search This Area"
-map.on('moveend', function() {
-  if (hotelsLayerVisible) {
-    var currentBounds = map.getBounds();
-    // If the new bounds differ from the last searched bounds, show the "Search This Area" button.
-    if (!lastSearchedBounds || boundsDifferent(lastSearchedBounds, currentBounds)) {
-      document.getElementById('searchThisArea').style.display = 'block';
-    } else {
-      document.getElementById('searchThisArea').style.display = 'none';
+// Inspect a cluster on click
+map.on('click', 'clusters', (e) => {
+  const features = map.queryRenderedFeatures(e.point, {
+    layers: ['clusters']
+  });
+  const clusterId = features[0].properties.cluster_id;
+  map.getSource('locations').getClusterExpansionZoom(
+    clusterId,
+    (err, zoom) => {
+      if (err) return;
+
+      map.easeTo({
+        center: features[0].geometry.coordinates,
+        zoom: zoom
+      });
     }
-  }
+  );
 });
 
-document.getElementById('searchThisArea').addEventListener('click', function() {
-  // Check if the user is zoomed in enough
-  var currentZoom = map.getZoom();
-  var minZoomThreshold = 9; // Adjust this value as needed
-  if (currentZoom < minZoomThreshold) {
-    alert("You're zoomed out too far. Please zoom in further to search this area.");
-    return;
+// When a click event occurs on a feature in the unclustered-point layer,
+// open a popup at the location of the feature, showing its name and website.
+map.on('click', 'unclustered-point', (e) => {
+  const coordinates = e.features[0].geometry.coordinates.slice();
+  const name = e.features[0].properties.name;
+  const website = e.features[0].properties.website;
+  // Use a fallback for hotels without a website
+  const websiteDisplay = website ? `<a href="${website}" target="_blank">${website}</a>` : "No website available";
+
+  // Adjust coordinates if necessary for maps with multiple copies of features.
+  if (['mercator', 'equirectangular'].includes(map.getProjection().name)) {
+    while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+      coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+    }
   }
-  
-  // Proceed if zoom level is acceptable
-  var currentBounds = map.getBounds();
-  var bboxPolygon = {
-    type: 'Polygon',
-    coordinates: [[
-      [currentBounds.getWest(), currentBounds.getSouth()],
-      [currentBounds.getEast(), currentBounds.getSouth()],
-      [currentBounds.getEast(), currentBounds.getNorth()],
-      [currentBounds.getWest(), currentBounds.getNorth()],
-      [currentBounds.getWest(), currentBounds.getSouth()]
-    ]]
-  };
-  map.setFilter('denmark_hotels_layer', ['within', bboxPolygon]);
-  lastSearchedBounds = currentBounds;
-  this.style.display = 'none';
+
+  new mapboxgl.Popup()
+    .setLngLat(coordinates)
+    .setHTML(
+      `<strong>${name}</strong><br>${websiteDisplay}`
+    )
+    .addTo(map);
 });
+
+// Change the cursor to a pointer when hovering over clusters.
+map.on('mouseenter', 'clusters', () => {
+  map.getCanvas().style.cursor = 'pointer';
+});
+map.on('mouseleave', 'clusters', () => {
+  map.getCanvas().style.cursor = '';
+});
+
 
 
 // Draw Route on Map (unchanged)
