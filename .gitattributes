@@ -1,1 +1,12 @@
+# Ignore Jupyter Notebooks in language stats
 *.ipynb linguist-detectable=false
+
+# Ignore generated documentation (Markdown, HTML)
+*.md linguist-detectable=false
+*.html linguist-detectable=false
+
+# Ignore configuration files (JSON, YAML, TOML)
+*.json linguist-detectable=false
+*.yaml linguist-detectable=false
+*.toml linguist-detectable=false
+
