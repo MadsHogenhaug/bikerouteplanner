@@ -20,6 +20,8 @@ var endGeocoder = new MapboxGeocoder({
   placeholder: "Destination"
 });
 
+
+
 // Append Geocoders to Sidebar Containers
 document.getElementById('startGeocoder').appendChild(startGeocoder.onAdd(map));
 document.getElementById('endGeocoder').appendChild(endGeocoder.onAdd(map));
@@ -407,17 +409,43 @@ document.getElementById('getRoute').addEventListener('click', function() {
     return;
   }
 
-  // Build an array for exclusions based on checkbox values
-  let exclusions = [];
-  if (document.getElementById('excludeFerry').checked) {
-    exclusions.push("ferry");
-  }
 
-  // Prepare the request body including the exclusions
+  // Collect dynamic routing parameters from UI controls
+  let maxSpeed = parseFloat(document.getElementById('maxSpeed').value);
+  let Tertiary = document.getElementById('Tertiary').value;
+  let Secondary = document.getElementById('Secondary').value;
+  let Primary = document.getElementById('Primary').value;
+  let BikeNetwork = document.getElementById('BikeNetwork').value;
+  let Surface = document.getElementById('Surface').value
+
+
+  // print the values to the console
+  console.log("Max Speed: ", maxSpeed);
+  console.log("Tertiary: ", Tertiary);
+  console.log("Secondary ", Secondary);
+  console.log("Primary: ", Primary);
+  console.log("Bike Network: ", BikeNetwork);
+  console.log("Surface: ", Surface);
+
+
+  // Build the custom model using user inputs
+  let customModel = {
+    priority: [
+      {"if": "road_class == TERTIARY", "multiply_by": Tertiary},
+      {"if": "road_class == SECONDARY", "multiply_by": Secondary},
+      {"if": "road_class == PRIMARY", "multiply_by": Primary},
+      {"if": "bike_network == MISSING", "multiply_by": BikeNetwork},
+      {"if": "surface == GRAVEL", "multiply_by": Surface}
+          ]
+  };
+
+
+  // Prepare the request body including all dynamic parameters
   var requestBody = {
     start: startCoords,
     end: endCoords,
-    exclude: exclusions
+    max_speed: maxSpeed,
+    custom_model: customModel
   };
 
   fetch('/route', {
@@ -436,16 +464,30 @@ document.getElementById('getRoute').addEventListener('click', function() {
       alert("Error: " + data.error);
       return;
     }
-    // Use the 'paths' key returned by Graphhopper
     var routes = data.paths;
     if (!routes || routes.length === 0) {
       alert("No routes found.");
       return;
     }
-    drawRouteOnMap(routes[0]);
+    var route = routes[0];
+    drawRouteOnMap(route);
+    
+    // Calculate route distance and midpoint
+    var distanceInKm = (route.distance / 1000).toFixed(2);
+    var midIndex = Math.floor(route.points.coordinates.length / 2);
+    var midCoord = route.points.coordinates[midIndex];
+    
+    // Create the popup at the midpoint
+    new mapboxgl.Popup({ closeButton: false, closeOnClick: false })
+      .setLngLat(midCoord)
+      .setHTML("<div style='padding:5px; background-color: white; border: 1px solid #ccc; border-radius: 4px;'>Distance: " + distanceInKm + " km</div>")
+      .addTo(map);
   })
   .catch(error => {
     console.error("Error fetching route:", error);
     alert("Failed to fetch route. See console for details.");
   });
+  
+  
 });
+

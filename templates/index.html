@@ -47,17 +47,96 @@
         <div id="endGeocoder" class="geocoder-container"></div>
       </div>
       <button id="getRoute">Get Route</button>
-      <div id="routeOptions">
-        <h3 id="routeOptionsToggle">
-          Route Options <span id="routeOptionsArrow">▶</span>
-        </h3>
-        <div id="routeOptionsContent" class="hidden">
-            <div class="option">
-                <input type="checkbox" id="excludeFerry">
-                <label for="excludeFerry">Exclude Ferry</label>
-            </div>
-        </div>
+      
+      <!-- Route Options Section -->
+<div id="routeOptions">
+  <h3 id="routeOptionsToggle">
+    Route Options <span id="routeOptionsArrow">▶</span>
+  </h3>
+  <div id="routeOptionsContent" class="hidden">
+
+
+    <div class="option">
+      <label for="Surface">Gravel  (0.0 - 1.0):</label>
+      <input 
+        type="number" 
+        id="Surface" 
+        value="1.0" 
+        step="0.1" 
+        min="0.0" 
+        max="1.0"
+      >
     </div>
+    
+    
+    <!-- Max Speed first -->
+    <div class="option">
+      <label for="maxSpeed">Max Speed:</label>
+      <input 
+        type="number" 
+        id="maxSpeed" 
+        value="25" 
+        step="1" 
+        min="0"
+      >
+    </div>
+    
+    <!-- Primary -->
+    <div class="option">
+      <label for="Primary"> (Primary):</label>
+      <input 
+        type="number" 
+        id="Primary" 
+        value="1.0" 
+        step="0.1" 
+        min="0.0" 
+        max="1.0"
+      >
+    </div>
+
+    <!-- Secondary -->
+    <div class="option">
+      <label for="Secondary"> (Secondary):</label>
+      <input 
+        type="number" 
+        id="Secondary" 
+        value="1.0" 
+        step="0.1" 
+        min="0.0" 
+        max="1.0"
+      >
+    </div>
+
+    <!-- Tertiary -->
+    <div class="option">
+      <label for="Tertiary"> (Tertiary):</label>
+      <input 
+        type="number" 
+        id="Tertiary" 
+        value="1.0" 
+        step="0.1" 
+        min="0.0" 
+        max="1.0"
+      >
+    </div>
+
+    <!-- Bike Network Missing -->
+    <div class="option">
+      <label for="BikeNetwork"> (Bike Network Missing):</label>
+      <input 
+        type="number" 
+        id="BikeNetwork" 
+        value="0.5" 
+        step="0.1" 
+        min="0.0" 
+        max="1.0"
+      >
+    </div>
+  </div>
+</div>
+
+      
+      <!-- Additional Options -->
       <div id="additionalOptions">
         <h3 id="additionalOptionsToggle">
             <span>More Options</span> 
@@ -67,9 +146,9 @@
             <button id="showHotels">Show Hotels</button> 
             <button id="showShelters">Show Shelters</button>
         </div>
+      </div>
     </div>
-  
-  
+  </div> <!-- Closing #sidebar -->
 
   <!-- External JavaScript -->
   <script>
