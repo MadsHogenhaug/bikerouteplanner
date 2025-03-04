@@ -349,19 +349,16 @@ map.on('mouseleave', 'clusters', () => {
 
 
 
-// Draw Route on Map (unchanged)
 function drawRouteOnMap(route) {
+  // Draw Route on Map
   if (map.getSource('route')) {
     map.removeLayer('route');
     map.removeSource('route');
   }
+  // Use route.points (which should be a valid GeoJSON object)
   map.addSource('route', {
     type: 'geojson',
-    data: {
-      type: 'Feature',
-      properties: {},
-      geometry: route.geometry
-    }
+    data: route.points
   });
   map.addLayer({
     id: 'route',
@@ -377,12 +374,13 @@ function drawRouteOnMap(route) {
     }
   });
   // Adjust map view to the route
-  var coordinates = route.geometry.coordinates;
+  var coordinates = route.points.coordinates;
   var bounds = coordinates.reduce(function(bounds, coord) {
     return bounds.extend(coord);
   }, new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
   map.fitBounds(bounds, { padding: 20 });
 }
+
 
 // Toggle visibility of "Route Options" section
 document.getElementById("routeOptionsToggle").addEventListener("click", function () {
@@ -438,7 +436,8 @@ document.getElementById('getRoute').addEventListener('click', function() {
       alert("Error: " + data.error);
       return;
     }
-    var routes = data.routes;
+    // Use the 'paths' key returned by Graphhopper
+    var routes = data.paths;
     if (!routes || routes.length === 0) {
       alert("No routes found.");
       return;
