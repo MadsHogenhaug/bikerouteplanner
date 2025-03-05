@@ -106,7 +106,13 @@ export function initRouteFetcher() {
       const route = routes[0];
       drawRouteOnMap(route);
       
-      // Calculate midpoint and display distance
+      // Calculate midpoint and display distance + time
+      const totalMinutes = Math.round(route.time / 60000); // Convert ms to minutes
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      const durationText = hours > 0 ? `${hours}h ${minutes}m` : `${minutes} min`;
+
+
       const distanceInKm = (route.distance / 1000).toFixed(2);
       const midIndex = Math.floor(route.points.coordinates.length / 2);
       const midCoord = route.points.coordinates[midIndex];
@@ -129,7 +135,8 @@ export function initRouteFetcher() {
             color: #333;
             text-align: center;
           ">
-            📏 Distance: <span style="color: #007AFF;">${distanceInKm} km</span>
+            Distance: <span style="color: #007AFF;">${distanceInKm} km</span><br>
+            Duration: <span style="color: #007AFF;">${durationText}</span>
           </div>
         `)
         .addTo(map);
