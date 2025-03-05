@@ -1,12 +1,10 @@
-// route.js – Fetch a route from the backend and draw it on the map
-import { loadSleepingLocations, findNearbySleepingSpots, plotSleepingSpots, updateSleepSpotsList } from './nearbySleep.js';
+// route.js – Updated for dynamic programming itinerary planning with revised itinerary display
 
+import { loadSleepingLocations, getLodgingList, getDistance } from './nearbySleep.js';
 import { getMap } from './map.js';
 import { getStartCoords, getEndCoords } from './geocoder.js';
 
-// Load sleeping locations on startup
 loadSleepingLocations();
-
 
 export function drawRouteOnMap(route) {
   const map = getMap();
@@ -54,8 +52,8 @@ export function initRouteFetcher() {
       return;
     }
 
-    // Retrieve user input
-    const dailyDistance = parseFloat(document.getElementById('dailyDistance').value); // New input field for daily segment length
+    // Retrieve user input for daily distance (in km)
+    const dailyDistance = parseFloat(document.getElementById('dailyDistance').value);
     if (isNaN(dailyDistance) || dailyDistance <= 0) {
       alert("Please enter a valid daily biking distance.");
       return;
@@ -100,16 +98,10 @@ export function initRouteFetcher() {
         const route = data.paths[0];
         drawRouteOnMap(route);
 
-        // Step 1: Find segment points
-        const segmentPoints = getDailySegments(route, dailyDistance);
-        plotSegmentMarkers(segmentPoints);
-
-        // Step 2: Find nearby sleeping spots
-        const sleepingSpots = findNearbySleepingSpots(segmentPoints);
-        plotSleepingSpots(sleepingSpots);
-        // Step 3: Update sidebar
-        updateSleepSpotsList(sleepingSpots);
-
+        // Use dynamic programming to plan the itinerary
+        const itinerary = planItinerary(route, dailyDistance);
+        plotItineraryMarkers(itinerary);
+        updateItinerarySidebar(itinerary);
       })
       .catch(error => {
         console.error("Error fetching route:", error);
@@ -119,74 +111,246 @@ export function initRouteFetcher() {
 }
 
 /**
- * Function to divide route into segments based on user-defined distance.
- * @param {Object} route - The route object from Graphhopper.
- * @param {number} dailyDistance - User-defined daily biking distance in km.
- * @returns {Array} Array of segment points (latitude, longitude).
+ * Compute cumulative distances along the route.
+ * @param {Array} coordinates - Array of [lng, lat] points.
+ * @returns {Array} Cumulative distances in meters.
  */
-function getDailySegments(route, dailyDistance) {
-  const segmentPoints = [];
-  let traveledDistance = 0;
-  const targetDistance = dailyDistance * 1000; // Convert km to meters
-
-  const coordinates = route.points.coordinates;
+function computeCumulativeDistances(coordinates) {
+  const cumDist = [0];
   for (let i = 1; i < coordinates.length; i++) {
-    const prevPoint = coordinates[i - 1];
-    const currentPoint = coordinates[i];
+    const d = getDistance(coordinates[i - 1], coordinates[i]);
+    cumDist.push(cumDist[i - 1] + d);
+  }
+  return cumDist;
+}
 
-    const distanceBetween = getDistance(prevPoint, currentPoint);
-    traveledDistance += distanceBetween;
+/**
+ * Project lodging locations onto the route.
+ * For each lodging, find the closest point on the route and record its cumulative distance and off-route deviation.
+ * @param {Array} coordinates - Route coordinates.
+ * @param {Array} cumDist - Cumulative distances along the route.
+ * @param {Array} lodgingList - List of lodging objects {name, coords}.
+ * @param {number} threshold - Maximum allowed off-route distance (meters) to consider.
+ * @returns {Array} Candidate stops.
+ */
+function projectLodgingsOntoRoute(coordinates, cumDist, lodgingList, threshold = 1000) {
+  const candidates = [];
+  lodgingList.forEach(lodging => {
+    let minDist = Infinity;
+    let bestIndex = 0;
+    for (let i = 0; i < coordinates.length; i++) {
+      const d = getDistance(coordinates[i], lodging.coords);
+      if (d < minDist) {
+        minDist = d;
+        bestIndex = i;
+      }
+    }
+    if (minDist <= threshold) {
+      candidates.push({
+        name: lodging.name,
+        coords: lodging.coords,
+        routeDistance: cumDist[bestIndex],
+        offRoute: minDist,
+        type: lodging.name.includes("Hotel") ? "Hotel" : "Shelter"
+      });
+    }
+  });
+  return candidates;
+}
 
-    if (traveledDistance >= targetDistance) {
-      segmentPoints.push(currentPoint);
-      traveledDistance = 0; // Reset counter for the next segment
+/**
+ * Use dynamic programming to plan the itinerary.
+ * Start and destination are fixed stops.
+ * Intermediate stops are chosen to minimize the penalty from deviating from the target daily distance plus off-route detours.
+ * @param {Object} route - Route object (with route.points.coordinates).
+ * @param {number} targetDailyDistanceKm - Target daily distance (km).
+ * @returns {Array} Optimal itinerary (ordered stops).
+ */
+function planItinerary(route, targetDailyDistanceKm) {
+  const coordinates = route.points.coordinates;
+  const cumDist = computeCumulativeDistances(coordinates);
+  const totalRouteDistance = cumDist[cumDist.length - 1];
+
+  const lodgingList = getLodgingList();
+  const lodgingCandidates = projectLodgingsOntoRoute(coordinates, cumDist, lodgingList, 5000);
+
+  lodgingCandidates.push({
+    name: "Start",
+    coords: coordinates[0],
+    routeDistance: 0,
+    offRoute: 0,
+    type: "start"
+  });
+  lodgingCandidates.push({
+    name: "Destination",
+    coords: coordinates[coordinates.length - 1],
+    routeDistance: totalRouteDistance,
+    offRoute: 0,
+    type: "destination"
+  });
+
+  lodgingCandidates.sort((a, b) => a.routeDistance - b.routeDistance);
+
+  const n = lodgingCandidates.length;
+  const dp = new Array(n).fill(Infinity);
+  const prev = new Array(n).fill(-1);
+
+  const startIndex = lodgingCandidates.findIndex(c => c.type === "start");
+  const destIndex = lodgingCandidates.findIndex(c => c.type === "destination");
+  dp[startIndex] = 0;
+
+  const targetMeters = targetDailyDistanceKm * 1000;
+
+  // ---- ADJUST THESE WEIGHTS AS YOU LIKE ----
+  const distanceDeviationWeight = 1;   // Lower means distance deviation is less important
+  const offRouteDeviationWeight = 1;   // Higher means off-route deviation is more important
+  // ------------------------------------------
+
+  for (let i = 0; i < n; i++) {
+    if (dp[i] === Infinity) continue;
+
+    for (let j = i + 1; j < n; j++) {
+      if (lodgingCandidates[j].routeDistance <= lodgingCandidates[i].routeDistance) continue;
+
+      const segmentDistance = lodgingCandidates[j].routeDistance - lodgingCandidates[i].routeDistance;
+      // Optionally skip very long segments (e.g., > 1.5× daily target)
+      if (segmentDistance > targetMeters * 1.5) continue;
+
+      // Weighted cost function
+      const distanceDeviation = Math.abs(segmentDistance - targetMeters);
+      const offRoutePenalty = lodgingCandidates[j].offRoute;
+
+      const costSegment = distanceDeviationWeight * distanceDeviation
+                        + offRouteDeviationWeight * offRoutePenalty;
+
+      const newCost = dp[i] + costSegment;
+      if (newCost < dp[j]) {
+        dp[j] = newCost;
+        prev[j] = i;
+      }
     }
   }
-  return segmentPoints;
+
+  // Reconstruct path
+  const itinerary = [];
+  let index = destIndex;
+  while (index !== -1) {
+    itinerary.push(lodgingCandidates[index]);
+    index = prev[index];
+  }
+  itinerary.reverse();
+  return itinerary;
 }
+
 
 /**
- * Function to calculate distance between two coordinates.
- * Uses Haversine formula.
- * @param {Array} coord1 - [lng, lat] of first point.
- * @param {Array} coord2 - [lng, lat] of second point.
- * @returns {number} Distance in meters.
+ * Plot itinerary stops on the map with markers.
+ * Popup includes:
+ *  - Label ("Start", "Destination", or lodging name)
+ *  - Total distance along route (km)
+ *  - Distance since last stop (km)
+ *  - Off-route deviation (m)
+ * @param {Array} itinerary - List of stops from planItinerary.
  */
-function getDistance(coord1, coord2) {
-  const R = 6371000; // Radius of Earth in meters
-  const lat1 = (coord1[1] * Math.PI) / 180;
-  const lat2 = (coord2[1] * Math.PI) / 180;
-  const deltaLat = lat2 - lat1;
-  const deltaLng = ((coord2[0] - coord1[0]) * Math.PI) / 180;
+function plotItineraryMarkers(itinerary) {
+  // Remove old markers
+  if (window.itineraryMarkers) {
+    window.itineraryMarkers.forEach(marker => marker.remove());
+  }
+  window.itineraryMarkers = [];
 
-  const a =
-    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
-    Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
+  itinerary.forEach((stop, i) => {
+    // Decide marker color
+    let color;
+    if (stop.type === "start") {
+      color = "black";
+    } else if (stop.type === "destination") {
+      color = "red";
+    } else if (stop.type === "Hotel") {
+      color = "blue";
+    } else {
+      color = "green";
+    }
+
+    // Calculate total distance so far and distance since last stop
+    const cumulativeKm = (stop.routeDistance / 1000).toFixed(2);
+    let deltaKm = 0;
+    if (i > 0) {
+      const prevStop = itinerary[i - 1];
+      deltaKm = (stop.routeDistance - prevStop.routeDistance) / 1000;
+    }
+
+    // Decide what to show as the title
+    let title;
+    if (stop.type === "start") {
+      title = "Start";
+    } else if (stop.type === "destination") {
+      title = "Destination";
+    } else {
+      title = stop.name; // For hotels/shelters
+    }
+
+    // Build the popup HTML
+    // For the first stop, we omit the "+X km from last stop" line
+    const popupHTML = `
+      <b>${title}</b><br>
+      Distance along route: ${cumulativeKm} km<br>
+      ${i === 0 ? "" : `+${deltaKm.toFixed(2)} km from last stop<br>`}
+      Off-route deviation: ${stop.offRoute.toFixed(0)} m
+    `;
+
+    // Create and add the marker
+    const marker = new mapboxgl.Marker({ color })
+      .setLngLat(stop.coords)
+      .setPopup(new mapboxgl.Popup().setHTML(popupHTML))
+      .addTo(getMap());
+
+    window.itineraryMarkers.push(marker);
+  });
 }
 
-// Array to store markers
-let segmentMarkers = [];
 
 /**
- * Function to plot markers at segment points and remove old ones.
- * @param {Array} segmentPoints - Array of [lng, lat] points.
+ * Update the itinerary sidebar with the optimal stops.
+ * For each stop (except the first), also display the km driven since the previous stop.
+ * Does not display "Stop 0" – instead, the first entry is labeled "Start" and the last "Destination."
+ * @param {Array} itinerary - List of itinerary stops.
  */
-function plotSegmentMarkers(segmentPoints) {
-    // Remove old markers
-    segmentMarkers.forEach(marker => marker.remove());
-    segmentMarkers = [];
-
-    // Add new markers
-    segmentPoints.forEach(point => {
-        const marker = new mapboxgl.Marker({ color: "red" })
-            .setLngLat(point)
-            .setPopup(new mapboxgl.Popup().setHTML("Suggested Stop"))
-            .addTo(getMap());
-
-        segmentMarkers.push(marker);
-    });
+function updateItinerarySidebar(itinerary) {
+  const sidebar = document.getElementById("itinerarySidebar");
+  sidebar.innerHTML = "<h3>Itinerary</h3>";
+  
+  for (let i = 0; i < itinerary.length; i++) {
+    let label, deltaKm = 0;
+    const cumulativeKm = (itinerary[i].routeDistance / 1000).toFixed(2);
+    
+    if (itinerary[i].type === "start") {
+      label = "Start";
+    } else if (itinerary[i].type === "destination") {
+      label = "Destination";
+      deltaKm = i === 0 ? 0 : ((itinerary[i].routeDistance - itinerary[i-1].routeDistance) / 1000);
+    } else {
+      label = `Stop ${i}`; // Since the start is labeled separately, intermediate stops will show Stop 1, Stop 2, etc.
+      deltaKm = ((itinerary[i].routeDistance - itinerary[i-1].routeDistance) / 1000);
+    }
+    
+    const deltaStr = deltaKm.toFixed(2);
+    const detourStr = itinerary[i].offRoute.toFixed(0);
+    
+    let description;
+    if (itinerary[i].type === "start") {
+      description = `<strong>${label}:</strong> ${itinerary[i].name} — ${cumulativeKm} km along route`;
+    } else if (itinerary[i].type === "destination") {
+      description = `<strong>${label}:</strong> ${itinerary[i].name} — ${cumulativeKm} km along route, +${deltaStr} km from last stop`;
+    } else {
+      description = `<strong>${label}:</strong> ${itinerary[i].name} — ${cumulativeKm} km along route, +${deltaStr} km from last stop, detour ${detourStr} m`;
+    }
+    
+    const div = document.createElement("div");
+    div.classList.add("itinerary-stop");
+    div.innerHTML = description;
+    sidebar.appendChild(div);
+  }
 }
 
-
+export { planItinerary };

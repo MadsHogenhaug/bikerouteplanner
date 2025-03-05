@@ -26,6 +26,23 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/modules.css') }}">
 
+  <style>
+    /* Additional styling for the itinerary sidebar */
+    #itinerarySidebar {
+      margin-top: 20px;
+      padding: 10px;
+      border-top: 1px solid #ddd;
+      max-height: 300px;
+      overflow-y: auto;
+      font-size: 14px;
+      color: #333;
+    }
+    .itinerary-stop {
+      margin-bottom: 10px;
+      padding: 5px;
+      border-bottom: 1px solid #eee;
+    }
+  </style>
 </head>
 <body>
   <!-- Map Container -->
@@ -63,31 +80,30 @@
                 <input type="number" id="maxSpeed" value="25" step="1" min="0">
             </div>
             <div class="option">
-                <label for="Primary"> (Primary):</label>
+                <label for="Primary">(Primary):</label>
                 <input type="number" id="Primary" value="1.0" step="0.1" min="0.0" max="1.0">
             </div>
             <div class="option">
-                <label for="Secondary"> (Secondary):</label>
+                <label for="Secondary">(Secondary):</label>
                 <input type="number" id="Secondary" value="1.0" step="0.1" min="0.0" max="1.0">
             </div>
             <div class="option">
-                <label for="Tertiary"> (Tertiary):</label>
+                <label for="Tertiary">(Tertiary):</label>
                 <input type="number" id="Tertiary" value="1.0" step="0.1" min="0.0" max="1.0">
             </div>
             <div class="option">
-                <label for="BikeNetwork"> (Bike Network Missing):</label>
+                <label for="BikeNetwork">(Bike Network Missing):</label>
                 <input type="number" id="BikeNetwork" value="0.5" step="0.1" min="0.0" max="1.0">
             </div>
-            <!-- NEW: User-defined daily biking distance -->
+            <!-- Daily Distance Input -->
             <div class="option">
                 <label for="dailyDistance">Daily Distance (km):</label>
                 <input type="number" id="dailyDistance" value="100" step="10" min="10">
             </div>
         </div>
-    </div>
-    
+      </div>
       
-      <!-- Additional Options -->
+      <!-- Additional Options (if needed) -->
       <div id="additionalOptions">
         <h3 id="additionalOptionsToggle">
           <span>More Options</span>
@@ -100,17 +116,12 @@
       </div>
     </div>
 
-    <div id="sleepSpotsSection">
-      <h3>Nearby Sleeping Spots</h3>
-      <div id="sleepSpotsList">
-          <p>No sleeping spots found yet.</p>
-      </div>
+    <!-- Itinerary Sidebar for dynamic stops -->
+    <div id="itinerarySidebar">
+      <h3>Itinerary</h3>
+      <p>No itinerary planned yet.</p>
+    </div>
   </div>
-
-
-  </div>
-
-  
 
   <!-- Pass Mapbox token to the modules -->
   <script>

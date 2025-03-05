@@ -7,6 +7,8 @@ import { initLayers } from './layers.js';
 import { initRouteFetcher } from './route.js';
 import { initClusterEvents } from './cluster.js';
 
+
+
 document.addEventListener('DOMContentLoaded', () => {
   initMap();
   initGeocoders();
