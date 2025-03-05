@@ -1,0 +1,49 @@
+/* layout.css – Layout elements */
+
+/* Map container */
+#map {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+  }
+  
+  /* Sidebar */
+  #sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 300px;
+    height: 100%;
+    background: #FFFFFF; /* Clean white background */
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+    transform: translateX(-100%);
+    z-index: 2;
+    padding: 24px;
+    overflow-y: auto;
+  }
+  
+  #sidebar.open {
+    transform: translateX(0);
+  }
+  
+  /* Burger Icon */
+  #burgerIcon {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    font-size: 28px;
+    color: #555555;
+    z-index: 3;
+    cursor: pointer;
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 10px 14px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  #burgerIcon:hover {
+    background-color: rgba(255, 255, 255, 1);
+  }
+  
