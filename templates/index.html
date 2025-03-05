@@ -51,35 +51,41 @@
       <!-- Route Options Section -->
       <div id="routeOptions">
         <h3 id="routeOptionsToggle">
-          Route Options <span id="routeOptionsArrow">▶</span>
+            Route Options <span id="routeOptionsArrow">▶</span>
         </h3>
         <div id="routeOptionsContent" class="hidden">
-          <div class="option">
-            <label for="Surface">Gravel  (0.0 - 1.0):</label>
-            <input type="number" id="Surface" value="1.0" step="0.1" min="0.0" max="1.0">
-          </div>
-          <div class="option">
-            <label for="maxSpeed">Max Speed:</label>
-            <input type="number" id="maxSpeed" value="25" step="1" min="0">
-          </div>
-          <div class="option">
-            <label for="Primary"> (Primary):</label>
-            <input type="number" id="Primary" value="1.0" step="0.1" min="0.0" max="1.0">
-          </div>
-          <div class="option">
-            <label for="Secondary"> (Secondary):</label>
-            <input type="number" id="Secondary" value="1.0" step="0.1" min="0.0" max="1.0">
-          </div>
-          <div class="option">
-            <label for="Tertiary"> (Tertiary):</label>
-            <input type="number" id="Tertiary" value="1.0" step="0.1" min="0.0" max="1.0">
-          </div>
-          <div class="option">
-            <label for="BikeNetwork"> (Bike Network Missing):</label>
-            <input type="number" id="BikeNetwork" value="0.5" step="0.1" min="0.0" max="1.0">
-          </div>
+            <div class="option">
+                <label for="Surface">Gravel (0.0 - 1.0):</label>
+                <input type="number" id="Surface" value="1.0" step="0.1" min="0.0" max="1.0">
+            </div>
+            <div class="option">
+                <label for="maxSpeed">Max Speed:</label>
+                <input type="number" id="maxSpeed" value="25" step="1" min="0">
+            </div>
+            <div class="option">
+                <label for="Primary"> (Primary):</label>
+                <input type="number" id="Primary" value="1.0" step="0.1" min="0.0" max="1.0">
+            </div>
+            <div class="option">
+                <label for="Secondary"> (Secondary):</label>
+                <input type="number" id="Secondary" value="1.0" step="0.1" min="0.0" max="1.0">
+            </div>
+            <div class="option">
+                <label for="Tertiary"> (Tertiary):</label>
+                <input type="number" id="Tertiary" value="1.0" step="0.1" min="0.0" max="1.0">
+            </div>
+            <div class="option">
+                <label for="BikeNetwork"> (Bike Network Missing):</label>
+                <input type="number" id="BikeNetwork" value="0.5" step="0.1" min="0.0" max="1.0">
+            </div>
+            <!-- NEW: User-defined daily biking distance -->
+            <div class="option">
+                <label for="dailyDistance">Daily Distance (km):</label>
+                <input type="number" id="dailyDistance" value="100" step="10" min="10">
+            </div>
         </div>
-      </div>
+    </div>
+    
       
       <!-- Additional Options -->
       <div id="additionalOptions">
@@ -93,7 +99,18 @@
         </div>
       </div>
     </div>
+
+    <div id="sleepSpotsSection">
+      <h3>Nearby Sleeping Spots</h3>
+      <div id="sleepSpotsList">
+          <p>No sleeping spots found yet.</p>
+      </div>
   </div>
+
+
+  </div>
+
+  
 
   <!-- Pass Mapbox token to the modules -->
   <script>

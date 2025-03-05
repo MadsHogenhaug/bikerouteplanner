@@ -1,7 +1,12 @@
 // route.js – Fetch a route from the backend and draw it on the map
+import { loadSleepingLocations, findNearbySleepingSpots, plotSleepingSpots, updateSleepSpotsList } from './nearbySleep.js';
 
 import { getMap } from './map.js';
 import { getStartCoords, getEndCoords } from './geocoder.js';
+
+// Load sleeping locations on startup
+loadSleepingLocations();
+
 
 export function drawRouteOnMap(route) {
   const map = getMap();
@@ -40,110 +45,148 @@ export function drawRouteOnMap(route) {
 
 export function initRouteFetcher() {
   const map = getMap();
-  
-  document.getElementById('getRoute').addEventListener('click', function() {
+
+  document.getElementById('getRoute').addEventListener('click', function () {
     const startCoords = getStartCoords();
     const endCoords = getEndCoords();
     if (!startCoords || !endCoords) {
       alert("Please select both start and end locations.");
       return;
     }
-    
-    // Retrieve dynamic routing parameters from the UI
+
+    // Retrieve user input
+    const dailyDistance = parseFloat(document.getElementById('dailyDistance').value); // New input field for daily segment length
+    if (isNaN(dailyDistance) || dailyDistance <= 0) {
+      alert("Please enter a valid daily biking distance.");
+      return;
+    }
+
     const maxSpeed = parseFloat(document.getElementById('maxSpeed').value);
     const Tertiary = document.getElementById('Tertiary').value;
     const Secondary = document.getElementById('Secondary').value;
     const Primary = document.getElementById('Primary').value;
     const BikeNetwork = document.getElementById('BikeNetwork').value;
     const Surface = document.getElementById('Surface').value;
-    
-    console.log("Max Speed: ", maxSpeed);
-    console.log("Tertiary: ", Tertiary);
-    console.log("Secondary: ", Secondary);
-    console.log("Primary: ", Primary);
-    console.log("Bike Network: ", BikeNetwork);
-    console.log("Surface: ", Surface);
-    
-    // Build custom routing model based on user input
+
     const customModel = {
       priority: [
-        {"if": "road_class == TERTIARY", "multiply_by": Tertiary},
-        {"if": "road_class == SECONDARY", "multiply_by": Secondary},
-        {"if": "road_class == PRIMARY", "multiply_by": Primary},
-        {"if": "bike_network == MISSING", "multiply_by": BikeNetwork},
-        {"if": "surface == GRAVEL", "multiply_by": Surface}
+        { "if": "road_class == TERTIARY", "multiply_by": Tertiary },
+        { "if": "road_class == SECONDARY", "multiply_by": Secondary },
+        { "if": "road_class == PRIMARY", "multiply_by": Primary },
+        { "if": "bike_network == MISSING", "multiply_by": BikeNetwork },
+        { "if": "surface == GRAVEL", "multiply_by": Surface }
       ]
     };
-    
+
     const requestBody = {
       start: startCoords,
       end: endCoords,
       max_speed: maxSpeed,
       custom_model: customModel
     };
-    
+
     fetch('/route', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody)
     })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error("HTTP error " + response.status);
-      }
-      return response.json();
-    })
-    .then(data => {
-      if (data.error) {
-        alert("Error: " + data.error);
-        return;
-      }
-      const routes = data.paths;
-      if (!routes || routes.length === 0) {
-        alert("No routes found.");
-        return;
-      }
-      const route = routes[0];
-      drawRouteOnMap(route);
-      
-      // Calculate midpoint and display distance + time
-      const totalMinutes = Math.round(route.time / 60000); // Convert ms to minutes
-      const hours = Math.floor(totalMinutes / 60);
-      const minutes = totalMinutes % 60;
-      const durationText = hours > 0 ? `${hours}h ${minutes}m` : `${minutes} min`;
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          alert("Error: " + data.error);
+          return;
+        }
 
+        const route = data.paths[0];
+        drawRouteOnMap(route);
 
-      const distanceInKm = (route.distance / 1000).toFixed(2);
-      const midIndex = Math.floor(route.points.coordinates.length / 2);
-      const midCoord = route.points.coordinates[midIndex];
-      
-      if (window.popUp) {
-        window.popUp.remove();
-      }
-      
-      window.popUp = new mapboxgl.Popup({ closeButton: true, closeOnClick: true })
-        .setLngLat(midCoord)
-        .setHTML(`
-          <div style="
-            padding: 8px 12px;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-            font-family: 'Arial', sans-serif;
-            font-size: 14px;
-            font-weight: bold;
-            color: #333;
-            text-align: center;
-          ">
-            Distance: <span style="color: #007AFF;">${distanceInKm} km</span><br>
-            Duration: <span style="color: #007AFF;">${durationText}</span>
-          </div>
-        `)
-        .addTo(map);
-    })
-    .catch(error => {
-      console.error("Error fetching route:", error);
-      alert("Failed to fetch route. See console for details.");
-    });
+        // Step 1: Find segment points
+        const segmentPoints = getDailySegments(route, dailyDistance);
+        plotSegmentMarkers(segmentPoints);
+
+        // Step 2: Find nearby sleeping spots
+        const sleepingSpots = findNearbySleepingSpots(segmentPoints);
+        plotSleepingSpots(sleepingSpots);
+        // Step 3: Update sidebar
+        updateSleepSpotsList(sleepingSpots);
+
+      })
+      .catch(error => {
+        console.error("Error fetching route:", error);
+        alert("Failed to fetch route. See console for details.");
+      });
   });
 }
+
+/**
+ * Function to divide route into segments based on user-defined distance.
+ * @param {Object} route - The route object from Graphhopper.
+ * @param {number} dailyDistance - User-defined daily biking distance in km.
+ * @returns {Array} Array of segment points (latitude, longitude).
+ */
+function getDailySegments(route, dailyDistance) {
+  const segmentPoints = [];
+  let traveledDistance = 0;
+  const targetDistance = dailyDistance * 1000; // Convert km to meters
+
+  const coordinates = route.points.coordinates;
+  for (let i = 1; i < coordinates.length; i++) {
+    const prevPoint = coordinates[i - 1];
+    const currentPoint = coordinates[i];
+
+    const distanceBetween = getDistance(prevPoint, currentPoint);
+    traveledDistance += distanceBetween;
+
+    if (traveledDistance >= targetDistance) {
+      segmentPoints.push(currentPoint);
+      traveledDistance = 0; // Reset counter for the next segment
+    }
+  }
+  return segmentPoints;
+}
+
+/**
+ * Function to calculate distance between two coordinates.
+ * Uses Haversine formula.
+ * @param {Array} coord1 - [lng, lat] of first point.
+ * @param {Array} coord2 - [lng, lat] of second point.
+ * @returns {number} Distance in meters.
+ */
+function getDistance(coord1, coord2) {
+  const R = 6371000; // Radius of Earth in meters
+  const lat1 = (coord1[1] * Math.PI) / 180;
+  const lat2 = (coord2[1] * Math.PI) / 180;
+  const deltaLat = lat2 - lat1;
+  const deltaLng = ((coord2[0] - coord1[0]) * Math.PI) / 180;
+
+  const a =
+    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+// Array to store markers
+let segmentMarkers = [];
+
+/**
+ * Function to plot markers at segment points and remove old ones.
+ * @param {Array} segmentPoints - Array of [lng, lat] points.
+ */
+function plotSegmentMarkers(segmentPoints) {
+    // Remove old markers
+    segmentMarkers.forEach(marker => marker.remove());
+    segmentMarkers = [];
+
+    // Add new markers
+    segmentPoints.forEach(point => {
+        const marker = new mapboxgl.Marker({ color: "red" })
+            .setLngLat(point)
+            .setPopup(new mapboxgl.Popup().setHTML("Suggested Stop"))
+            .addTo(getMap());
+
+        segmentMarkers.push(marker);
+    });
+}
+
+
