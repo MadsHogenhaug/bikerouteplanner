@@ -22,13 +22,15 @@
     cursor: pointer;
   }
   
-  /* Geocoder row (input fields) */
-  #geocoderRow {
+/* Geocoder row (input fields) */
+#geocoderRow {
     display: flex;
     flex-direction: column;
     gap: 12px;
     width: 100%;
-  }
+    position: relative; /* Needed for absolute positioning of the button */
+}
+
   
   /* Geocoder input styling */
   .geocoder-container {
@@ -37,7 +39,8 @@
     border-radius: 6px;
     z-index: 1;
   }
-  
+
+
   .geocoder-container .mapboxgl-ctrl-geocoder {
     width: 100%;
   }
@@ -46,10 +49,25 @@
     z-index: 1001;
   }
   
+  /* Add destination button */
+  #addViaPoint {
+    width: auto; /* Makes the button only as wide as its content */
+    display: block; /* Ensures it does not stretch */
+    margin: 0 auto 0; /* Reduces the margin to bring it closer */
+    padding: 8px 16px; /* Reduces padding to make it smaller */
+    background-color: #64B5F6;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s;
+  }
+
   /* Get Route Button */
   #getRoute {
     width: 100%;
-    margin: 15px 0 20px;
+    margin: 25px 0 20px;
     background-color: #64B5F6;
     color: #FFFFFF;
     border: none;
@@ -59,7 +77,7 @@
     font-weight: 600;
     transition: background-color 0.2s;
   }
-  
+  #addViaPoint:hover,
   #getRoute:hover {
     background-color: #42A5F5;
   }

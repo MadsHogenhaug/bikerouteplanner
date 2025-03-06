@@ -60,10 +60,15 @@ export function initRouteFetcher() {
     const endCoords = getEndCoords();
     const viaCoords = getViaCoords();
 
-    if (!startCoords || !endCoords || !viaCoords) {
-      alert('Please select start, end, and via locations.');
+    console.log(startCoords);
+    console.log(endCoords);
+    console.log(viaCoords);
+
+    if (!startCoords || !endCoords) {
+      alert('Please select start and end locations.');
       return;
     }
+    
 
     const dailyDistance = parseFloat(
       document.getElementById('dailyDistance').value
@@ -91,15 +96,21 @@ export function initRouteFetcher() {
       ],
     };
 
-    // If multiple via-points, spread them
+    // Ensure viaCoords is always an array (handles null, undefined cases)
+    const viaPoints = Array.isArray(viaCoords) ? viaCoords : [];
+
+    // Construct the request body with conditional via point handling
     const requestBody = {
-      points:
-        viaCoords.length > 2
-          ? [startCoords, ...viaCoords, endCoords]
-          : [startCoords, viaCoords, endCoords],
+      points: viaPoints.length > 0
+        ? [startCoords, ...viaPoints, endCoords]  // Spread via points when present
+        : [startCoords, endCoords],  // Only start and end when no via points exist
       max_speed: maxSpeed,
       custom_model: customModel,
     };
+
+    // Debugging log to check the request format
+    console.log(requestBody);
+    
 
     fetch('/route', {
       method: 'POST',
