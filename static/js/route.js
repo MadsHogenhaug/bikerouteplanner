@@ -1,22 +1,24 @@
 // route.js
-// =============================
-// Contains the map display of the route itself
-// and triggers the itinerary planning and rendering from itinerary.js
-// =============================
+// --------------------------------------------------
+// Fetches the route from the backend, draws it on the map,
+// and then calls our hybrid itinerary planner to display
+// 1 "best" lodging + 4 nearest alternatives per day.
+// Exports:
+//   initRouteFetcher() - sets up the "Get Route" button
+// --------------------------------------------------
 
 import { loadSleepingLocations } from './nearbySleep.js';
 import { getMap } from './map.js';
 import { getStartCoords, getEndCoords, getViaCoords } from './geocoder.js';
-import {
-  planItinerary,
-  plotItineraryMarkers,
-  updateItinerarySidebar,
-} from './itinerary.js';
+import { planHybridItinerary, plotHybridPlan, updateHybridSidebar } from './itinerary.js';
 
-// Make sure lodging data is loaded
-loadSleepingLocations();
+loadSleepingLocations(); // ensure lodging data is loaded
 
-export function drawRouteOnMap(route) {
+/**
+ * Draw the route line on the map using a GeoJSON "LineString".
+ * @param {Object} route - The route object from backend (data.paths[0]).
+ */
+function drawRouteOnMap(route) {
   const map = getMap();
 
   // Remove any existing route layer/source first
@@ -27,7 +29,7 @@ export function drawRouteOnMap(route) {
 
   map.addSource('route', {
     type: 'geojson',
-    data: route.points,
+    data: route.points, // e.g. { type: "LineString", coordinates: [...] }
   });
 
   map.addLayer({
@@ -40,10 +42,11 @@ export function drawRouteOnMap(route) {
     },
     paint: {
       'line-color': '#1DB954',
-      'line-width': 8,
+      'line-width': 6,
     },
   });
 
+  // Auto-fit map to route bounds
   const coordinates = route.points.coordinates;
   const bounds = coordinates.reduce(
     (b, coord) => b.extend(coord),
@@ -52,38 +55,40 @@ export function drawRouteOnMap(route) {
   map.fitBounds(bounds, { padding: 20 });
 }
 
+/**
+ * Attach a click handler to the "Get Route" button to:
+ *   1) Gather start/end (and via) coordinates.
+ *   2) Build request.
+ *   3) Call backend.
+ *   4) Draw route.
+ *   5) Plan hybrid itinerary.
+ *   6) Plot and display results.
+ */
 export function initRouteFetcher() {
-  const map = getMap();
-
-  document.getElementById('getRoute').addEventListener('click', function () {
+  document.getElementById('getRoute').addEventListener('click', () => {
     const startCoords = getStartCoords();
     const endCoords = getEndCoords();
-    const viaCoords = getViaCoords();
-
-    console.log(startCoords);
-    console.log(endCoords);
-    console.log(viaCoords);
+    const viaCoords = getViaCoords(); // possibly empty array
 
     if (!startCoords || !endCoords) {
       alert('Please select start and end locations.');
       return;
     }
-    
 
-    const dailyDistance = parseFloat(
-      document.getElementById('dailyDistance').value
-    );
+    // Daily distance
+    const dailyDistance = parseFloat(document.getElementById('dailyDistance').value);
     if (isNaN(dailyDistance) || dailyDistance <= 0) {
       alert('Please enter a valid daily biking distance.');
       return;
     }
 
+    // Other route options
     const maxSpeed = parseFloat(document.getElementById('maxSpeed').value);
-    const Tertiary = document.getElementById('Tertiary').value;
-    const Secondary = document.getElementById('Secondary').value;
-    const Primary = document.getElementById('Primary').value;
-    const BikeNetwork = document.getElementById('BikeNetwork').value;
-    const Surface = document.getElementById('Surface').value;
+    const Tertiary = parseFloat(document.getElementById('Tertiary').value);
+    const Secondary = parseFloat(document.getElementById('Secondary').value);
+    const Primary = parseFloat(document.getElementById('Primary').value);
+    const BikeNetwork = parseFloat(document.getElementById('BikeNetwork').value);
+    const Surface = parseFloat(document.getElementById('Surface').value);
 
     const customModel = {
       priority: [
@@ -92,26 +97,21 @@ export function initRouteFetcher() {
         { if: 'road_class == PRIMARY', multiply_by: Primary },
         { if: 'bike_network == MISSING', multiply_by: BikeNetwork },
         { if: 'surface == GRAVEL', multiply_by: Surface }
-        // { if: 'road_environment == FERRY', multiply_by: .5 }
-      ],
+      ]
     };
 
-    // Ensure viaCoords is always an array (handles null, undefined cases)
-    const viaPoints = Array.isArray(viaCoords) ? viaCoords : [];
+    const points = viaCoords && viaCoords.length > 0
+      ? [startCoords, ...viaCoords, endCoords]
+      : [startCoords, endCoords];
 
-    // Construct the request body with conditional via point handling
+    // Build request body
     const requestBody = {
-      points: viaPoints.length > 0
-        ? [startCoords, ...viaPoints, endCoords]  // Spread via points when present
-        : [startCoords, endCoords],  // Only start and end when no via points exist
+      points,
       max_speed: maxSpeed,
-      custom_model: customModel,
+      custom_model: customModel
     };
 
-    // Debugging log to check the request format
-    console.log(requestBody);
-    
-
+    // Fetch route from backend
     fetch('/route', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -124,22 +124,21 @@ export function initRouteFetcher() {
           return;
         }
 
-        // The result from the backend, e.g. data.paths[0]
-        const route = data.paths[0];
-
-        // Show route on map
+        const route = data.paths[0]; // typical GH-like response
         drawRouteOnMap(route);
 
-        // Compute itinerary
-        const itinerary = planItinerary(route, dailyDistance);
+        // Now build the hybrid itinerary
+        const dayPlan = planHybridItinerary(route, dailyDistance);
 
-        // Display stops (markers, sidebar listing)
-        plotItineraryMarkers(itinerary);
-        updateItinerarySidebar(itinerary);
+        // Plot markers on map
+        plotHybridPlan(dayPlan);
+
+        // Update side panel with the hybrid itinerary
+        updateHybridSidebar(dayPlan);
       })
-      .catch(error => {
-        console.error('Error fetching route:', error);
-        alert('Failed to fetch route. Check console for details.');
+      .catch(err => {
+        console.error(err);
+        alert('Failed to fetch route. See console for details.');
       });
   });
 }

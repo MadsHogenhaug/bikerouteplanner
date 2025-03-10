@@ -42,6 +42,25 @@
       padding: 5px;
       border-bottom: 1px solid #eee;
     }
+    /* Styling for itinerary selection options */
+    #itinerarySelection {
+      margin-top: 20px;
+      padding: 10px;
+      border-top: 1px solid #ddd;
+      max-height: 300px;
+      overflow-y: auto;
+      font-size: 14px;
+      color: #333;
+    }
+    .itinerary-option {
+      margin-bottom: 10px;
+      padding: 5px;
+      border: 1px solid #ccc;
+      cursor: pointer;
+    }
+    .itinerary-option.active {
+      background-color: #eee;
+    }
   </style>
 </head>
 <body>
@@ -51,6 +70,15 @@
   <!-- Burger Icon -->
   <div id="burgerIcon">&#9776;</div>
 
+
+  <!-- Itinerary Popup -->
+  <div id="itineraryPopup" style="display: none; position: absolute; right: 10px; top: 10px; background: white; border: 1px solid black; padding: 10px; width: 300px; height: auto; overflow-y: auto; z-index: 1000;">
+    <div id="itineraryContent">
+      <h3>Day-by-Day Itinerary</h3>
+      <p>No itinerary planned yet.</p>
+    </div>
+    <button onclick="closeItineraryPopup()">Close</button>
+  </div>
   <!-- Sidebar -->
   <div id="sidebar">
     <span id="closeBtn" class="close-btn">&#x2715;</span>
@@ -118,12 +146,9 @@
       </div>
     </div>
 
-    <!-- Itinerary Sidebar for dynamic stops -->
-    <div id="itinerarySidebar">
-      <h3>Itinerary</h3>
-      <p>No itinerary planned yet.</p>
-    </div>
-  </div>
+
+
+
 
   <!-- Pass Mapbox token to the modules -->
   <script>
