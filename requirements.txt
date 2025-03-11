@@ -1,0 +1,31 @@
+Flask==3.1.0
+Werkzeug==3.1.3
+Jinja2==3.1.5
+itsdangerous==2.2.0
+click==8.1.8
+
+# Networking & HTTP requests
+requests==2.32.3
+urllib3==2.3.0
+httpx==0.28.1
+httpcore==1.0.7
+idna==3.10
+
+# Security & Validation
+argon2-cffi==23.1.0
+cffi==1.17.1
+pyyaml==6.0.2
+jsonschema==4.23.0
+certifi==2025.1.31
+
+# Geospatial Libraries (if required)
+geopy==2.4.1
+geographiclib==2.0
+
+# Data Handling
+python-dateutil==2.9.0.post0
+
+# Logging & Monitoring
+python-json-logger==3.2.1
+prometheus_client==0.21.1
+
