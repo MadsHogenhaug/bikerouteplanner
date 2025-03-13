@@ -1,0 +1,307 @@
+/* globals.css – Combined Global CSS File */
+/* =====================================================
+   Base Styles (from base.css)
+   ===================================================== */
+
+   body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', sans-serif;
+    background-color: #F5F5F5; /* Soft off-white background */
+    color: #333333;            /* Dark gray text for contrast */
+  }
+  
+  /* =====================================================
+     Layout Styles (from layout.css)
+     ===================================================== */
+  
+  /* Map container */
+  #map {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+  }
+  
+  /* Sidebar */
+  #sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 300px;
+    height: 100%;
+    background: #FFFFFF; /* Clean white background */
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+    transform: translateX(-100%);
+    z-index: 2;
+    padding: 24px;
+    overflow-y: auto;
+  }
+  
+  #sidebar.open {
+    transform: translateX(0);
+  }
+  
+  /* Burger Icon */
+  #burgerIcon {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    font-size: 28px;
+    color: #555555;
+    z-index: 3;
+    cursor: pointer;
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 10px 14px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  #burgerIcon:hover {
+    background-color: rgba(255, 255, 255, 1);
+  }
+  
+  /* =====================================================
+     Component Styles (from components.css)
+     ===================================================== */
+  
+  /* Sidebar Header */
+  .sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 0;
+  }
+  
+  .sidebar-header h2 {
+    margin: 0;
+    font-size: 32px;
+    font-weight: 700;
+    color: #333333;
+  }
+  
+  /* Close (X) button */
+  .close-btn {
+    font-size: 26px;
+    color: #E57373;
+    cursor: pointer;
+  }
+  
+  /* Geocoder row (input fields) */
+  #geocoderRow {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    position: relative; /* Needed for absolute positioning of the button */
+  }
+  
+  /* Geocoder input styling */
+  .geocoder-container {
+    position: relative;
+    overflow: visible;
+    border-radius: 6px;
+    z-index: 1;
+  }
+  
+  .geocoder-container .mapboxgl-ctrl-geocoder {
+    width: 100%;
+  }
+  
+  .geocoder-container:focus-within {
+    z-index: 1001;
+  }
+  
+  /* Add destination button */
+  #addViaPoint {
+    width: auto; /* Makes the button only as wide as its content */
+    display: block; /* Ensures it does not stretch */
+    margin: 0 auto 0; /* Reduces the margin to bring it closer */
+    padding: 8px 16px; /* Reduces padding to make it smaller */
+    background-color: #64B5F6;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s;
+  }
+  
+  /* Get Route Button */
+  #getRoute {
+    width: 100%;
+    margin: 25px 0 20px;
+    background-color: #64B5F6;
+    color: #FFFFFF;
+    border: none;
+    padding: 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s;
+  }
+  
+  #addViaPoint:hover,
+  #getRoute:hover {
+    background-color: #42A5F5;
+  }
+  
+  /* Buttons for hotels and shelters */
+  #showHotels,
+  #showShelters {
+    flex: 1;
+    background-color: #64B5F6;
+    color: #FFFFFF;
+    border: none;
+    padding: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    text-align: center;
+    margin: 5px 0;
+    width: 100%;
+  }
+  
+  #showHotels:hover,
+  #showShelters:hover {
+    background-color: #42A5F5;
+  }
+  
+  /* Additional styling for the itinerary sidebar */
+  #itinerarySidebar {
+    margin-top: 20px;
+    padding: 10px;
+    border-top: 1px solid #ddd;
+    max-height: 300px;
+    overflow-y: auto;
+    font-size: 14px;
+    color: #333;
+  }
+  
+  .itinerary-stop {
+    margin-bottom: 10px;
+    padding: 5px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  /* =====================================================
+     Module-Specific Styles (from modules.css)
+     ===================================================== */
+  
+  /* Route Options */
+  #routeOptions {
+    margin-bottom: 15px;
+  }
+  
+  /* Unified styling for Route Options and More Options headings */
+  #routeOptions h3,
+  #additionalOptions h3 {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin: 0;
+    padding: 5px 0;
+  }
+  
+  #routeOptions h3:hover,
+  #additionalOptions h3:hover {
+    color: #007bff;
+  }
+  
+  /* Arrow styling for headings */
+  #routeOptionsArrow,
+  #additionalOptionsArrow {
+    transition: transform 0.3s ease;
+    display: inline-block;
+  }
+  
+  #routeOptionsArrow.open,
+  #additionalOptionsArrow.open {
+    transform: rotate(90deg);
+  }
+  
+  /* Collapsible content for Route Options */
+  #routeOptionsContent {
+    display: block; /* Open by default; use 'none' if preferred */
+  }
+  
+  #routeOptionsContent.hidden {
+    display: none;
+  }
+  
+  /* Individual route option rows */
+  #routeOptions .option {
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+  }
+  
+  #routeOptions .option label {
+    margin-left: 8px;
+    color: #555555;
+  }
+  
+  /* Checkboxes */
+  input[type="checkbox"] {
+    accent-color: #64B5F6;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+  }
+  
+  /* Additional Options */
+  #additionalOptionsContent {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  #additionalOptionsContent.hidden {
+    display: none;
+  }
+  
+  /* Container for optional extra buttons */
+  #buttonContainer {
+    display: flex;
+    gap: 10px;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+
+
+  /* Geocoder Specific Styles */
+.geocoder-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: #ffffff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+
+.geocoder-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem;
+}
+
+.log-button {
+  padding: 0.5rem 1rem;
+  background-color: #64B5F6;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  align-self: center;
+}
+
+.log-button:hover {
+  background-color: #42A5F5;
+}
