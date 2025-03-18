@@ -8,7 +8,7 @@ const BASE_URL = 'https://graphhopper.com/api/1/route';
 /**
  * Helper function to call GraphHopper's route API.
  */
-async function getRoute(points, maxSpeed, customModel) {
+async function getRoute(points, customModel) {
   const params = { key: GH_API_KEY };
 
   const data = {
@@ -17,7 +17,6 @@ async function getRoute(points, maxSpeed, customModel) {
     profile: 'bike',
     instructions: false,
     points_encoded: false,
-    max_speed: maxSpeed,
     'ch.disable': true,
     custom_model: customModel,
   };
@@ -37,7 +36,7 @@ async function getRoute(points, maxSpeed, customModel) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { points, max_speed, custom_model } = body;
+    const { points, custom_model } = body;
 
     // Basic validation
     if (!points || points.length < 2) {
@@ -48,16 +47,14 @@ export async function POST(request) {
     }
 
     // Set defaults if not provided
-    const maxSpeed = max_speed || 25;
     const cm = custom_model || { priority: [] };
 
     // Call the helper function to get data from GraphHopper
-    const routeData = await getRoute(points, maxSpeed, cm);
+    const routeData = await getRoute(points, cm);
 
     // Return the result as JSON
     return NextResponse.json(routeData);
   } catch (error) {
-
     console.error('Error in /api/routing POST:', error);
     return NextResponse.json(
       { error: error.message || 'Internal Server Error' + GH_API_KEY },
