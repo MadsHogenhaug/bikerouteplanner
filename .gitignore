@@ -1,2 +1,7 @@
 config.ini
 static/img/*
+.env.local
+.next/
+.vscode/
+node_modules/
+	
