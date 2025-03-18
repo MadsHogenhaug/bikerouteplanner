@@ -291,6 +291,33 @@
   padding: 0.5rem;
 }
 
+/* Fix for ARIA hidden accessibility issue */
+.mapboxgl-ctrl-geocoder {
+  z-index: 1;
+}
+
+.mapboxgl-ctrl-geocoder--suggestion-item:focus,
+.mapboxgl-ctrl-geocoder--suggestion-item:focus-within {
+  z-index: 2;
+}
+
+.mapboxgl-ctrl-geocoder--input:focus {
+  z-index: 2;
+}
+
+/* Ensure suggestions list is always on top and not hidden */
+.suggestions {
+  z-index: 9999 !important;
+}
+
+.suggestions-wrapper[aria-hidden="true"] {
+  display: none;
+}
+
+.suggestions-wrapper[aria-hidden="false"] {
+  display: block;
+}
+
 .log-button {
   padding: 0.5rem 1rem;
   background-color: #64B5F6;

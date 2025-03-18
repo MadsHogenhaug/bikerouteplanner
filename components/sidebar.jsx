@@ -24,24 +24,27 @@ const Sidebar = ({ children }) => {
       )}
       {isOpen && (
         <div id="sidebar" className="sidebar open">
-          {/* Close button as an 'X' */}
-          <button
-            id="closeBtn"
-            onClick={handleClose}
-            style={{
-              fontSize: '48px',
-              background: 'none',
-              border: 'none',
-              color: '#E57373',
-              cursor: 'pointer',
-              marginBottom: '1px'
-            }}
-          >
-            &times;
-          </button>
-
-          {/* Larger "Route Planner" heading */}
-          <h1 style={{ marginTop: 0, marginBottom: '20px' }}>Route Planner</h1>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
+            <h1 style={{ margin: 0, fontSize: '24px' }}>Route Planner</h1>
+            <button
+              id="closeBtn"
+              onClick={handleClose}
+              style={{
+                fontSize: '35px',
+                background: 'none',
+                border: 'none',
+                color: '#E57373',
+                cursor: 'pointer',
+                padding: '0 0 0 68px',
+                margin: 0,
+                height: '24px',
+                display: 'flex',
+                alignItems: 'center'
+              }}
+            >
+              ×
+            </button>
+          </div>
 
           {/* Now render children */}
           {children}

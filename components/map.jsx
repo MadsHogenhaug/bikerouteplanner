@@ -13,7 +13,7 @@ const Map = ({ children }) => {
   const [map, setMap] = useState(null);
 
   useEffect(() => {
-    mapboxgl.accessToken = "pk.eyJ1IjoibWFkc2hvZ2VuaGF1ZyIsImEiOiJjbTZ0eDZxdGQwNmhyMmlxcHFqbWI2ZmNnIn0.hTjKwQBm6SptIfln2J5FSA";
+    mapboxgl.accessToken = "pk.eyJ1IjoibWFkc2hvZ2VuaGF1ZyIsImEiOiJjbTg3dmxwMWMwYTVtMmxyMHdvMnpzeHh4In0.WST60JiV0RZV9Ne8CRdPpw";
     const mapInstance = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: 'mapbox://styles/mapbox/streets-v12',

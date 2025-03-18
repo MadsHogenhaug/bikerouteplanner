@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
 
-const GH_API_KEY = process.env.GRAPHOPPER_API_KEY;  // from .env or your environment
+const GH_API_KEY = process.env.GRAPHHOPPER_API_KEY;  // from .env or your environment
 const BASE_URL = 'https://graphhopper.com/api/1/route';
 
 /**
@@ -57,9 +57,10 @@ export async function POST(request) {
     // Return the result as JSON
     return NextResponse.json(routeData);
   } catch (error) {
+
     console.error('Error in /api/routing POST:', error);
     return NextResponse.json(
-      { error: error.message || 'Internal Server Error' },
+      { error: error.message || 'Internal Server Error' + GH_API_KEY },
       { status: 500 }
     );
   }

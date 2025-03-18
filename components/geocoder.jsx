@@ -8,7 +8,7 @@ import { MapContext } from './map';
 import "mapbox-gl/dist/mapbox-gl.css";
 
 mapboxgl.accessToken =
-  'pk.eyJ1IjoibWFkc2hvZ2VuaGF1ZyIsImEiOiJjbTZ0eDZxdGQwNmhyMmlxcHFqbWI2ZmNnIn0.hTjKwQBm6SptIfln2J5FSA';
+  'pk.eyJ1IjoibWFkc2hvZ2VuaGF1ZyIsImEiOiJjbTg3dmxwMWMwYTVtMmxyMHdvMnpzeHh4In0.WST60JiV0RZV9Ne8CRdPpw';
 
 export const GeocoderContext = createContext(null);
 
@@ -43,32 +43,41 @@ export const GeocoderProvider = ({ children }) => {
     }
   };
 
+  console.log(startCoords, endCoords);
+  
+
   return (
     <GeocoderContext.Provider value={{ startCoords, endCoords }}>
-      <div className="geocoder-wrapper" style={{ border: 'none', padding: '0' }}>
-        {/* Remove labels and just use placeholders */}
-        <Geocoder
-          accessToken={mapboxgl.accessToken}
-          placeholder="Start location"
-          onRetrieve={handleStartRetrieve}
-          map={map}
-          mapboxgl={mapboxgl}
-          marker={false}
-        />
+      <div 
+        className="geocoder-wrapper" 
+        style={{ border: 'none', padding: '0' }}
+        role="search"
+        aria-label="Location search"
+      >
+        <div className="geocoder-container" role="combobox" aria-expanded="false">
+          <Geocoder
+            accessToken={mapboxgl.accessToken}
+            placeholder="Start location"
+            onRetrieve={handleStartRetrieve}
+            map={map}
+            mapboxgl={mapboxgl}
+            marker={false}
+            aria-label="Search for start location"
+          />
+        </div>
 
-        {/* No “+Add Stop” button—ignore it */}
-
-        <Geocoder
-          accessToken={mapboxgl.accessToken}
-          placeholder="Destination"
-          onRetrieve={handleEndRetrieve}
-          map={map}
-          mapboxgl={mapboxgl}
-          marker={false}
-        />
+        <div className="geocoder-container" role="combobox" aria-expanded="false">
+          <Geocoder
+            accessToken={mapboxgl.accessToken}
+            placeholder="Destination"
+            onRetrieve={handleEndRetrieve}
+            map={map}
+            mapboxgl={mapboxgl}
+            marker={false}
+            aria-label="Search for destination"
+          />
+        </div>
       </div>
-
-      {/* Remove "Log Start & End Locations" button */}
       {children}
     </GeocoderContext.Provider>
   );

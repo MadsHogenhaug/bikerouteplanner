@@ -13,7 +13,7 @@ const RouteFetcher = () => {
   const [routeData, setRouteData] = useState(null);
 
   // Controls collapsing of "Route Options"
-  const [isOptionsOpen, setIsOptionsOpen] = useState(true);
+  const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const toggleOptions = () => setIsOptionsOpen((prev) => !prev);
 
   const drawRouteOnMap = (route) => {
@@ -79,7 +79,7 @@ const RouteFetcher = () => {
       points: [startCoords, endCoords],
       max_speed: maxSpeed,
       custom_model: customModel,
-      // You could send dailyDistance to your server if it’s relevant
+      // You could send dailyDistance to your server if it's relevant
       daily_distance: parseFloat(dailyDistance)
     };
 
@@ -135,55 +135,61 @@ const RouteFetcher = () => {
       </div>
 
       {/* Options content visible only if isOptionsOpen */}
-      {isOptionsOpen && (
-        <div style={{ marginTop: '1rem' }}>
-          <div>
-            <label>
-              Gravel (0.0 - 1.0):
-              <input type="text" id="Gravel" defaultValue="1.0" />
-            </label>
-          </div>
-          <div>
-            <label>
-              Max Speed:
-              <input type="number" id="maxSpeed" defaultValue="25" />
-            </label>
-          </div>
-          <div>
-            <label>
-              (Primary):<br />
-              <input type="text" id="Primary" defaultValue="1.0" />
-              
-            </label>
-          </div>
-          <div>
-            <label>
-              (Secondary):
-              <input type="text" id="Secondary" defaultValue="1.0" />
-            </label>
-          </div>
-          <div>
-            <label>
-              (Tertiary):<br />
-              <input type="text" id="Tertiary" defaultValue="1.0" />
-            </label>
-          </div>
-          <div>
-            <label>
-              (Bike Network Missing):
-              <input type="float" id="BikeNetwork" defaultValue="1.0" />
-            </label>
-          </div>
-          <div>
-            <label>
-              Daily Distance (km):
-              <input type="number" id="dailyDistance" defaultValue="100" />
-            </label>
-          </div>
-
-
+      <div 
+        style={{ 
+          marginTop: '1rem',
+          maxHeight: isOptionsOpen ? '1000px' : '0',
+          opacity: isOptionsOpen ? 1 : 0,
+          overflow: 'hidden',
+          transition: 'all 0.3s ease-in-out'
+        }}
+      >
+        <div>
+          <label>
+            Gravel (0.0 - 1.0):
+            <input type="text" id="Gravel" defaultValue="1.0" />
+          </label>
         </div>
-      )}
+        <div>
+          <label>
+            Max Speed:
+            <input type="number" id="maxSpeed" defaultValue="25" />
+          </label>
+        </div>
+        <div>
+          <label>
+            (Primary):<br />
+            <input type="text" id="Primary" defaultValue="1.0" />
+            
+          </label>
+        </div>
+        <div>
+          <label>
+            (Secondary):
+            <input type="text" id="Secondary" defaultValue="1.0" />
+          </label>
+        </div>
+        <div>
+          <label>
+            (Tertiary):<br />
+            <input type="text" id="Tertiary" defaultValue="1.0" />
+          </label>
+        </div>
+        <div>
+          <label>
+            (Bike Network Missing):
+            <input type="float" id="BikeNetwork" defaultValue="1.0" />
+          </label>
+        </div>
+        <div>
+          <label>
+            Daily Distance (km):
+            <input type="number" id="dailyDistance" defaultValue="100" />
+          </label>
+        </div>
+
+
+      </div>
     </div>
   );
 };
