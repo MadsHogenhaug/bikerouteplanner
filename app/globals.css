@@ -23,23 +23,28 @@
     width: 100%;
   }
   
-  /* Sidebar */
+  /* Sidebar default styling */
   #sidebar {
     position: fixed;
     top: 0;
     left: 0;
     width: 300px;
     height: 100%;
-    background: #FFFFFF; /* Clean white background */
-    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    background: #fff;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
     transition: transform 0.3s ease;
-    transform: translateX(-100%);
     z-index: 2;
     padding: 24px;
     overflow-y: auto;
   }
-  
-  #sidebar.open {
+
+  /* When closed, move sidebar out of view */
+  .sidebar.closed {
+    transform: translateX(-100%);
+  }
+
+  /* When open, sidebar is in view */
+  .sidebar.open {
     transform: translateX(0);
   }
   
@@ -88,30 +93,7 @@
     cursor: pointer;
   }
   
-  /* Geocoder row (input fields) */
-  #geocoderRow {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    width: 100%;
-    position: relative; /* Needed for absolute positioning of the button */
-  }
-  
-  /* Geocoder input styling */
-  .geocoder-container {
-    position: relative;
-    overflow: visible;
-    border-radius: 6px;
-    z-index: 1;
-  }
-  
-  .geocoder-container .mapboxgl-ctrl-geocoder {
-    width: 100%;
-  }
-  
-  .geocoder-container:focus-within {
-    z-index: 1001;
-  }
+
   
   /* Add destination button */
   #addViaPoint {

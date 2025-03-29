@@ -1,6 +1,3 @@
-// sidebar.jsx
-// -----------------------------
-// React component for a toggleable sidebar
 'use client'
 
 import React, { useState } from 'react';
@@ -22,34 +19,33 @@ const Sidebar = ({ children }) => {
           &#9776;
         </div>
       )}
-      {isOpen && (
-        <div id="sidebar" className="sidebar open">
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-            <h1 style={{ margin: 0, fontSize: '24px' }}>Route Planner</h1>
-            <button
-              id="closeBtn"
-              onClick={handleClose}
-              style={{
-                fontSize: '35px',
-                background: 'none',
-                border: 'none',
-                color: '#E57373',
-                cursor: 'pointer',
-                padding: '0 0 0 68px',
-                margin: 0,
-                height: '24px',
-                display: 'flex',
-                alignItems: 'center'
-              }}
-            >
-              ×
-            </button>
-          </div>
-
-          {/* Now render children */}
-          {children}
+      {/* Always render the sidebar; toggle visibility via class */}
+      <div id="sidebar" className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
+          <h1 style={{ margin: 0, fontSize: '24px' }}>Route Planner</h1>
+          <button
+            id="closeBtn"
+            onClick={handleClose}
+            style={{
+              fontSize: '35px',
+              background: 'none',
+              border: 'none',
+              color: '#E57373',
+              cursor: 'pointer',
+              padding: '0 0 0 68px',
+              margin: 0,
+              height: '24px',
+              display: 'flex',
+              alignItems: 'center'
+            }}
+          >
+            ×
+          </button>
         </div>
-      )}
+
+        {/* The geocoder components (and other children) remain mounted */}
+        {children}
+      </div>
     </>
   );
 };
