@@ -192,7 +192,8 @@
 }
 
 /* Optional: Style for the "Set Destination" button inside the popup */
-.mapboxgl-popup-content button.poi-set-destination-button {
+.mapboxgl-popup-content button.poi-set-destination-button,
+.mapboxgl-popup-content button.poi-set-via-button {
   display: block; /* Make button take its own line */
   width: 100%;
   margin-top: 8px; /* Space above button */
@@ -207,7 +208,8 @@
   transition: background-color 0.2s ease;
 }
 
-.mapboxgl-popup-content button.poi-set-destination-button:hover {
+.mapboxgl-popup-content button.poi-set-destination-button:hover,
+.mapboxgl-popup-content button.poi-set-via-button:hover {
   background-color: #0056b3;
 }
 

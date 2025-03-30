@@ -109,12 +109,65 @@ background-color: #1AA049;
     z-index: 2;
   }
 
+
+  /* === Geocoder Via Point Specific Layout === */
+
+/* This is the container holding ONE via Geocoder and its remove button */
+.geocoder-via {
+  display: flex;         /* Arrange items horizontally */
+  align-items: center;   /* Vertically align the input and button */
+  gap: 8px;            /* Add space between the input and the button (adjust as needed) */
+  padding: 8px;
+  /* It already inherits margin-bottom from .geocoder-container */
+}
+
+/* Optional: Ensure the Geocoder input takes up available space */
+.geocoder-via .mapboxgl-ctrl-geocoder {
+   flex-grow: 1; /* Allows the input field to expand */
+   /* width: auto; (Let flexbox handle width) */
+}
+
+
+/* === Via Point Remove Button Styling (Refined) === */
+.remove-via-btn {
+  /* Appearance */
+  background-color: #d46c6c; /* Lighter, less intrusive background */
+  color: #000000c6;          /* Grey color for the 'X' */
+  border: 1px solid #dee2e6; /* Subtle border */
+  border-radius: 50%;      /* Make it circular */
+
+  /* Sizing & Alignment */
+  width: 26px;             /* Slightly larger touch target */
+  height: 26px;
+  font-size: 18px;         /* Make 'X' a bit bigger */
+  font-weight: normal;     /* Default weight can look better */
+  line-height: 24px;       /* Adjust for vertical centering of '×' */
+  text-align: center;
+  padding: 0;              /* Remove default button padding */
+
+  /* Behavior */
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+  flex-shrink: 0;          /* Prevent button from shrinking */
+}
+
+.remove-via-btn:hover,
+.remove-via-btn:focus { /* Add focus style */
+  background-color: #e9ecef; /* Slightly darker on hover/focus */
+  color: #495057;          /* Darker 'X' */
+  border-color: #ced4da;
+  outline: none;           /* Remove default focus outline */
+}
 /* =====================================================
    End Geocoder Component Styles
    ===================================================== */
 
 /* === Inputs (General, may overlap with Geocoder) === */
 /* Style for generic inputs if needed outside geocoder/route options */
+
+
+
+
 
 
 /* === Checkboxes === */
