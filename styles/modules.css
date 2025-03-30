@@ -1,0 +1,212 @@
+/* styles/modules.css */
+/* =====================================================
+   Module-Specific Styles - Route Options, Itinerary
+   ===================================================== */
+
+/* === Route Fetcher / Route Options === */
+
+.route-fetcher {
+  padding: 16px; /* Applied in JSX, but can be defined here */
+  flex-grow: 1; /* Allow it to take remaining space */
+  display: flex;
+  flex-direction: column;
+}
+
+.route-options-toggle {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  transition: background-color 0.2s ease;
+}
+.route-options-toggle:hover {
+   background-color: #eeeeee;
+}
+
+.route-options-toggle h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #333;
+  font-weight: 600; /* Make heading slightly bolder */
+}
+
+.route-options-arrow {
+  font-size: 1.5rem; /* Keep size */
+  transition: transform 0.3s ease;
+  transform: rotate(-90deg); /* Default closed state */
+  color: #666;
+}
+
+.route-options-arrow.open {
+  transform: rotate(0deg); /* Open state */
+}
+
+.route-options-content {
+  max-height: 0; /* Closed by default */
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease-in-out, opacity 0.4s ease-in-out, padding 0.4s ease-in-out;
+  padding: 0 12px; /* Padding applied only when open */
+}
+
+.route-options-content.open {
+  max-height: 1000px; /* Allow it to expand */
+  opacity: 1;
+  padding: 16px 12px;
+}
+
+/* Styling for form elements within route options */
+.route-options-content label {
+    display: block; /* Ensure labels take full width */
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    margin-bottom: 2px;
+}
+
+.route-options-content input[type="number"] {
+    width: 100%;
+    padding: 8px 12px;
+    margin: 4px 0 12px 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+}
+ .route-options-content input[type="number"]:focus {
+    outline: none;
+    border-color: #64B5F6;
+ }
+
+.route-options-content p { /* Style for the introductory paragraph */
+   font-size: 14px;
+   font-weight: 500;
+   color: #666;
+   margin-bottom: 12px;
+   margin-top: 0;
+}
+
+/* Error message specific to route fetcher */
+.route-error-message {
+    color: #D32F2F;
+    background-color: #FFCDD2;
+    padding: 10px 12px;
+    border-radius: 4px;
+    margin-top: 0; /* Adjust as needed */
+    margin-bottom: 10px;
+    font-size: 14px;
+    border: 1px solid #EF9A9A;
+ }
+
+
+/* === Additional Options (Placeholder styles if needed later) === */
+/* #additionalOptions h3 { ... } */
+/* #additionalOptionsArrow { ... } */
+/* #additionalOptionsContent { ... } */
+
+
+/* === Itinerary Display (Placeholder styles if needed later) === */
+#itinerarySidebar { /* Consider .itinerary-container */
+  margin-top: 20px;
+  padding: 10px;
+  border-top: 1px solid #ddd;
+  max-height: 300px; /* Example max height */
+  overflow-y: auto;
+  font-size: 14px;
+  color: #333;
+  flex-shrink: 0; /* Prevent shrinking if space is limited */
+}
+
+.itinerary-stop {
+  margin-bottom: 10px;
+  padding: 5px;
+  border-bottom: 1px solid #eee;
+}
+.itinerary-stop:last-child {
+  border-bottom: none;
+}
+
+
+
+/* Container for POI controls */
+.poi-layers-controls {
+  border-top: 1px solid #eee;
+  margin-top: 20px;
+  padding-top: 15px;
+}
+
+/* Heading within POI controls */
+.poi-layers-controls h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 15px;
+  font-weight: 600; /* Slightly bolder heading */
+  color: #444;
+}
+
+/* Flex container for the toggle buttons */
+.poi-button-container {
+    display: flex;
+    gap: 10px; /* Space between buttons */
+    margin-bottom: 10px; /* Space below buttons */
+}
+
+/* Modify the rule for the buttons INSIDE the container */
+.poi-button-container > .button-base {
+  flex-grow: 1;   /* Keep: Allows growing */
+  flex-shrink: 1; /* Allow shrinking (usually default) */
+  flex-basis: 0;  /* ADD THIS: Explicitly set basis to 0 */
+  min-width: 0;   /* ADD THIS: Allow shrinking below intrinsic min-width */
+  width: auto;    /* Remove fixed width: 0; let flex-basis handle it */
+  /* Ensure padding is defined here or in .button-base */
+  padding: 10px 16px; /* Example padding from .button-base */
+  /* text-align: center; */ /* Ensure text is centered */
+  margin-bottom: 0; /* Reset margin if needed */
+}
+
+.button-base {
+  /* padding: 10px 16px; */ /* Define padding here or above */
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  text-align: center;
+  transition: background-color 0.2s, opacity 0.2s ease-in-out;
+  /* REMOVE width: 100%; if present, let flex container handle it */
+  /* margin-bottom: 10px; */ /* Let container handle spacing */
+  color: #FFFFFF;
+  /* Add white-space: nowrap; if text wrapping is an issue */
+  white-space: nowrap;
+}
+
+/* Optional: Style for the attribution text */
+.poi-attribution {
+  font-size: 0.8em;
+  color: #777;
+  margin: 5px 0 0 0; /* Adjust spacing */
+  text-align: center;
+}
+
+/* Optional: Style for the "Set Destination" button inside the popup */
+.mapboxgl-popup-content button.poi-set-destination-button {
+  display: block; /* Make button take its own line */
+  width: 100%;
+  margin-top: 8px; /* Space above button */
+  padding: 6px 10px;
+  font-size: 0.9em;
+  font-weight: 600;
+  color: #fff;
+  background-color: #007bff; /* Example blue color */
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.mapboxgl-popup-content button.poi-set-destination-button:hover {
+  background-color: #0056b3;
+}

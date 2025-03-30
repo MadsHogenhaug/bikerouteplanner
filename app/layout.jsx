@@ -1,5 +1,5 @@
 // app/layout.js
-import './globals.css'; // If you have a globals.css in app/ for universal resets, optional
+import './globals.css'; // Import the main CSS entry point
 
 
 export const metadata = {

@@ -1,9 +1,0 @@
-/* base.css – Basic reset and typography */
-body {
-    margin: 0;
-    padding: 0;
-    font-family: 'Inter', sans-serif;
-    background-color: #F5F5F5; /* Soft off-white background */
-    color: #333333;            /* Dark gray text for contrast */
-  }
-  
