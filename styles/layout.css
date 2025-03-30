@@ -20,7 +20,7 @@
   position: fixed;
   top: 0;
   left: 0;
-  width: 300px; /* Or use a CSS variable */
+  width: 350px; /* Or use a CSS variable */
   max-width: 90%; /* Prevent excessive width on small screens */
   height: 100%;
   background: #fff;

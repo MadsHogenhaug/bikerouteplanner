@@ -210,3 +210,45 @@
 .mapboxgl-popup-content button.poi-set-destination-button:hover {
   background-color: #0056b3;
 }
+
+/* === Itinerary Display === */
+.itinerary-display {
+  margin-top: 25px;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+}
+
+.itinerary-display h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.itinerary-display ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 300px; /* Limit height and allow scrolling */
+  overflow-y: auto;
+}
+
+.itinerary-display .itinerary-stop {
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+.itinerary-display .itinerary-stop:last-child {
+  border-bottom: none;
+}
+
+.itinerary-display .itinerary-stop strong {
+  font-size: 1em;
+}
+
+.itinerary-display .itinerary-details {
+  font-size: 0.85em;
+  color: #666;
+  display: block; /* Ensure details go to next line */
+  margin-top: 2px;
+}
