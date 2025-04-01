@@ -39,9 +39,9 @@ const Map = ({ children }) => {
       console.log('Map loaded and context updated');
     });
 
-     mapInstance.on('error', (e) => {
-        console.error('Mapbox error:', e.error?.message || e);
-     });
+    //  mapInstance.on('error', (e) => {
+    //     console.error('Mapbox error:', e.error?.message || e);
+    //  });
 
     // Clean up on component unmount
     return () => {
