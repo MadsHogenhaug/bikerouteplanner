@@ -1,57 +1,83 @@
-// components/poiConfig.js
+const S3_BASE = 'https://tilesets-bikerouteplanner.s3.eu-north-1.amazonaws.com';
+
+const DEFAULT_POINT_PAINT = {
+  'circle-radius': 5,
+  'circle-stroke-width': 1,
+  'circle-stroke-color': '#fff',
+};
+
+const DEFAULT_CLUSTER_PAINT = {
+  mediumThreshold: 20,
+  largeThreshold: 100,
+  smallRadius: 15,
+  mediumRadius: 20,
+  largeRadius: 25,
+};
+
+const buildPoi = ({
+  id,
+  buttonLabel,
+  slug,
+  sourceLayerName,
+  bounds,
+  defaultName,
+  websiteProp = 'website',
+  clusterColors,
+  pointColor,
+  clusterPaint = {},
+  pointPaint = {},
+}) => ({
+  id,
+  buttonLabel,
+  sourceId: `${id}-vector-source`,
+  clusterLayerId: `${id}-clusters`,
+  countLayerId: `${id}-count`,
+  pointLayerId: `${id}-points`,
+  tileUrlTemplate: `${S3_BASE}/${slug}/{z}/{x}/{y}.pbf`,
+  sourceLayerName,
+  bounds,
+  maxZoom: 14,
+  clusterPaint: {
+    ...DEFAULT_CLUSTER_PAINT,
+    smallColor: clusterColors[0],
+    mediumColor: clusterColors[1],
+    largeColor: clusterColors[2],
+    ...clusterPaint,
+  },
+  pointPaint: {
+    ...DEFAULT_POINT_PAINT,
+    'circle-color': pointColor,
+    ...pointPaint,
+  },
+  popupProperties: {
+    nameProp: 'name',
+    websiteProp,
+    defaultName,
+  },
+});
 
 export const poiConfiguration = [
-    {
-        id: 'shelters',
-        buttonLabel: 'Shelters',
-        sourceId: 'shelters-vector-source', 
-        clusterLayerId: 'shelters-clusters', 
-        countLayerId: 'shelters-count',      
-        pointLayerId: 'shelters-points',     
-        tileUrlTemplate: "https://tilesets-bikerouteplanner.s3.eu-north-1.amazonaws.com/dk_shelters/{z}/{x}/{y}.pbf", // S3 AWS Path
-        sourceLayerName: 'denmark_shelters', // Check Tippecanoe -l flag
-        bounds: [8.134441, 54.582451, 15.111020, 57.704343],
-        maxZoom: 14,
-        clusterPaint: { // MUST exist and have valid properties
-            smallColor: '#FFA500', mediumColor: '#FFD700', largeColor: '#FF8C00',
-            mediumThreshold: 20, largeThreshold: 100,
-            smallRadius: 15, mediumRadius: 20, largeRadius: 25
-        },
-        pointPaint: { // MUST exist and have valid properties
-            'circle-color': '#FF4500', 'circle-radius': 5,
-            'circle-stroke-width': 1, 'circle-stroke-color': '#fff'
-        },
-        popupProperties: { // MUST exist
-            nameProp: 'name',         // MUST exist - points to GeoJSON property
-            websiteProp: 'website',   // MUST exist - points to GeoJSON property (can be null/missing in data)
-            defaultName: 'Unnamed Shelter' // MUST exist - provides fallback string
-        }
-    },
-    {
-        id: 'hotels',
-        buttonLabel: 'Hotels',
-        sourceId: 'hotels-vector-source',   
-        clusterLayerId: 'hotels-clusters',  
-        countLayerId: 'hotels-count',       
-        pointLayerId: 'hotels-points',      
-        tileUrlTemplate: "https://tilesets-bikerouteplanner.s3.eu-north-1.amazonaws.com/dk_hotels/{z}/{x}/{y}.pbf", // S3 AWS Path
-        sourceLayerName: 'denmark_hotels',  // Check Tippecanoe -l flag
-        bounds: [8.113837,54.576042,15.143804,57.727772],
-        maxZoom: 14,
-        clusterPaint: { // MUST exist and have valid properties
-            smallColor: '#1E90FF', mediumColor: '#87CEFA', largeColor: '#4682B4',
-            mediumThreshold: 15, largeThreshold: 75,
-            smallRadius: 14, mediumRadius: 19, largeRadius: 24
-        },
-        pointPaint: { // MUST exist and have valid properties
-            'circle-color': '#4169E1', 'circle-radius': 5.5,
-            'circle-stroke-width': 1, 'circle-stroke-color': '#fff'
-        },
-        popupProperties: { // MUST exist
-            nameProp: 'name',           // MUST exist - points to GeoJSON property
-            websiteProp: 'contact:website', // MUST exist - points to GeoJSON property
-            defaultName: 'Unnamed Hotel' // MUST exist - provides fallback string
-        }
-    },
-    // ...
+  buildPoi({
+    id: 'shelters',
+    buttonLabel: 'Shelters',
+    slug: 'dk_shelters',
+    sourceLayerName: 'denmark_shelters',
+    bounds: [8.134441, 54.582451, 15.111020, 57.704343],
+    defaultName: 'Unnamed Shelter',
+    clusterColors: ['#FFA500', '#FFD700', '#FF8C00'],
+    pointColor: '#FF4500',
+  }),
+  buildPoi({
+    id: 'hotels',
+    buttonLabel: 'Hotels',
+    slug: 'dk_hotels',
+    sourceLayerName: 'denmark_hotels',
+    bounds: [8.113837, 54.576042, 15.143804, 57.727772],
+    defaultName: 'Unnamed Hotel',
+    websiteProp: 'contact:website',
+    clusterColors: ['#1E90FF', '#87CEFA', '#4682B4'],
+    pointColor: '#4169E1',
+    clusterPaint: { mediumThreshold: 15, largeThreshold: 75, smallRadius: 14, mediumRadius: 19, largeRadius: 24 },
+    pointPaint: { 'circle-radius': 5.5 },
+  }),
 ];

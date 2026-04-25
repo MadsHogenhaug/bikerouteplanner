@@ -1,58 +1,56 @@
-/* styles/layout.css */
-/* =====================================================
-   Layout Styles - Main structure: map, sidebar, burger
-   ===================================================== */
-
 /* Map container */
 #map {
-  position: absolute; /* Changed from fixed to allow sidebar interaction */
+  position: absolute;
   top: 0;
-  left: 0; /* Ensures it starts at the edge */
+  left: 0;
   right: 0;
   bottom: 0;
   width: 100%;
-  height: 100vh; /* Ensure it takes full viewport height */
-  z-index: 0; /* Ensure map is behind sidebar */
+  height: 100vh;
+  z-index: 0;
 }
 
-/* Sidebar default styling */
-#sidebar { /* Consider changing to .sidebar-container */
+/* Sidebar */
+#sidebar {
   position: fixed;
   top: 15px;
   left: 15px;
-  width: 375px; /* Or use a CSS variable */
-  max-width: 90%; /* Prevent excessive width on small screens */
+  width: 375px;
+  max-width: 90%;
   height: 80%;
   background: #fff;
-  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease-in-out;
-  z-index: 2; /* Above map, below burger when closed? */
+  z-index: 2;
   border-radius: 35px;
   padding: 24px;
-  overflow-y: auto; /* Allow sidebar content to scroll */
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
 }
 
-/* Sidebar visibility states */
 .sidebar.closed {
   transform: translateX(calc(-100% - 15px));
-  z-index: 0; /* or a value below the burger icon */
+  z-index: 0;
 }
 
 .sidebar.open {
   transform: translateX(0);
-
 }
 
-/* Burger Icon */
-#burgerIcon { /* Consider changing to .burger-icon */
-  position: fixed; /* Use fixed so it stays relative to viewport */
+.sidebar-content {
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+/* Burger icon */
+#burgerIcon {
+  position: fixed;
   top: 20px;
   left: 20px;
   font-size: 28px;
-  color: #555555;
-  z-index: 3; /* Above closed sidebar */
+  color: #555;
+  z-index: 3;
   cursor: pointer;
   background-color: rgba(255, 255, 255, 0.8);
   padding: 10px 14px;
@@ -65,37 +63,34 @@
   background-color: rgba(255, 255, 255, 1);
 }
 
-/* Sidebar Header specific layout part */
+/* Sidebar header */
 .sidebar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-bottom: 20px; /* Use padding instead of margin */
-    border-bottom: 1px solid #eee; /* Add separator */
-    margin-bottom: 20px; /* Space below header */
-    flex-shrink: 0; /* Prevent header from shrinking */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 20px;
+  flex-shrink: 0;
 }
 
-.sidebar-header h1 { /* Target h1 directly if it's always the title */
-    margin: 0;
-    font-size: 24px; /* Adjusted from original */
-    font-weight: 700;
-    color: #333333;
+.sidebar-header h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #333;
 }
 
-/* Close (X) button specific layout part */
-/* Style the button element directly if possible */
-#closeBtn { /* Consider changing to .sidebar-close-button */
-    font-size: 35px;
-    background: none;
-    border: none;
-    color: #E57373;
-    cursor: pointer;
-    padding: 0; /* Remove default padding */
-    margin: 0;
-    margin-left: auto; /* Pushes button to the right */
-    line-height: 1; /* Adjust line height for better centering */
-    display: flex;
-    align-items: center;
-    height: 24px; /* Match h1 effective height */
+#closeBtn {
+  font-size: 35px;
+  background: none;
+  border: none;
+  color: #e57373;
+  cursor: pointer;
+  padding: 0;
+  margin: 0 0 0 auto;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  height: 24px;
 }

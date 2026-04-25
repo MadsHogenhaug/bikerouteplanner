@@ -1,333 +1,179 @@
-// components/PoiLayers.jsx
 'use client';
 
-import React, { useState, useEffect, useContext, useCallback, useRef } from 'react';
+import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
-import { MapContext } from './map'; // Adjust path if needed
-import { useGeocoders } from './geocoder'; // Adjust path if needed
-import { poiConfiguration } from './poiConfig'; // Import configuration from standalone file
+import { createRoot } from 'react-dom/client';
 
-// Helper function to generate initial visibility state from the imported config
-const getInitialVisibility = () => {
-    return poiConfiguration.reduce((acc, poi) => {
-        acc[poi.id] = false; // Start with all layers hidden
-        return acc;
-    }, {});
-};
+import { MapContext } from './map';
+import { useGeocoders } from './geocoder';
+import { poiConfiguration } from './poiConfig';
+import { usePoiLayers } from '@/hooks/usePoiLayers';
+import PoiPopup from './PoiPopup';
 
+const initialVisibility = () =>
+  poiConfiguration.reduce((acc, poi) => {
+    acc[poi.id] = false;
+    return acc;
+  }, {});
 
 const PoiLayers = () => {
-    const map = useContext(MapContext); // Get map instance from context
-    const { setDestinationPoint, setViaPoint } = useGeocoders(); // Get geocoder setters from context
+  const map = useContext(MapContext);
+  const { setDestinationPoint, setViaPoint } = useGeocoders();
 
-    // State to track visibility of each POI type defined in poiConfig.js
-    const [visiblePoiTypes, setVisiblePoiTypes] = useState(getInitialVisibility);
-    // Ref to keep track of the currently open popup
-    const activePopup = useRef(null);
+  const [visiblePoiTypes, setVisiblePoiTypes] = useState(initialVisibility);
 
-    // --- Generic Helper Function to Add a Vector Tile Layer ---
-    // Fetches data from S3 based on config
-    const addVectorPoiLayer = useCallback((mapInstance, config) => {
-        // Destructure config for the specific POI type
-        const {
-            sourceId, tileUrlTemplate, bounds, maxZoom,
-            clusterLayerId, countLayerId, pointLayerId, sourceLayerName,
-            clusterPaint, pointPaint
-        } = config;
+  usePoiLayers(map, visiblePoiTypes);
 
-        // Prevent adding if source already exists or map isn't ready
-        if (!mapInstance || mapInstance.getSource(sourceId)) {
-             console.log(`Source ${sourceId} already exists or map not ready. Skipping add.`);
-             return;
-        }
+  const popupRef = useRef(null);
+  const popupRootRef = useRef(null);
 
-        // Use the S3 URL directly from the config
-        const finalTileUrl = tileUrlTemplate;
+  const closePopup = useCallback(() => {
+    if (popupRootRef.current) {
+      popupRootRef.current.unmount();
+      popupRootRef.current = null;
+    }
+    if (popupRef.current) {
+      popupRef.current.remove();
+      popupRef.current = null;
+    }
+  }, []);
 
-        console.log(`Adding source ${sourceId} using URL: ${finalTileUrl}`);
+  useEffect(() => closePopup, [closePopup]);
 
-        try {
-            // --- Add Source (using the URL from config) ---
-            mapInstance.addSource(sourceId, {
-                type: 'vector',
-                tiles: [finalTileUrl], // Use the absolute S3 URL from config
-                bounds: bounds,        // Optional bounds from config
-                maxzoom: maxZoom       // Max zoom of the tileset from config
-            });
+  const openPopup = useCallback((coords, name, website) => {
+    if (!map) return;
+    closePopup();
 
-            // --- Add Cluster Circle Layer ---
-            mapInstance.addLayer({
-                id: clusterLayerId, type: 'circle', source: sourceId, 'source-layer': sourceLayerName,
-                filter: ['has', 'point_count'],
-                paint: {
-                    'circle-color': [ 'step', ['get', 'point_count'], clusterPaint.smallColor, clusterPaint.mediumThreshold, clusterPaint.mediumColor, clusterPaint.largeThreshold, clusterPaint.largeColor ],
-                    'circle-radius': [ 'step', ['get', 'point_count'], clusterPaint.smallRadius, clusterPaint.mediumThreshold, clusterPaint.mediumRadius, clusterPaint.largeThreshold, clusterPaint.largeRadius ],
-                    'circle-stroke-width': 1, 'circle-stroke-color': '#fff'
-                 }
-            });
+    const container = document.createElement('div');
+    const root = createRoot(container);
 
-            // --- Add Cluster Count Layer ---
-            mapInstance.addLayer({
-                id: countLayerId, type: 'symbol', source: sourceId, 'source-layer': sourceLayerName,
-                filter: ['has', 'point_count'],
-                layout: { 'text-field': '{point_count_abbreviated}', 'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'], 'text-size': 12, 'text-allow-overlap': true },
-                paint: { 'text-color': '#ffffff' }
-            });
+    const popup = new mapboxgl.Popup({ closeButton: true, closeOnClick: true, anchor: 'bottom', offset: 15 })
+      .setLngLat(coords)
+      .setDOMContent(container)
+      .addTo(map);
 
-            // --- Add Unclustered Point Layer ---
-            mapInstance.addLayer({
-                id: pointLayerId, type: 'circle', source: sourceId, 'source-layer': sourceLayerName,
-                filter: ['!', ['has', 'point_count']],
-                paint: pointPaint // Use pointPaint style from config
-            });
+    popup.on('close', () => {
+      if (popupRootRef.current === root) {
+        root.unmount();
+        popupRootRef.current = null;
+        popupRef.current = null;
+      }
+    });
 
-            console.log(`Successfully added layers for ${sourceId}`);
-
-        } catch (error) {
-            // Log errors during layer/source addition
-            console.error(`Error adding source/layers for ${sourceId}:`, error);
-            console.error(`Tile URL used: ${finalTileUrl}`);
-        }
-    }, []); // useCallback with empty dependency array
-
-    // --- Generic Helper Function to Remove a Vector Tile Layer ---
-    const removeVectorPoiLayer = useCallback((mapInstance, config) => {
-        const { sourceId, clusterLayerId, countLayerId, pointLayerId } = config;
-        if (!mapInstance) return;
-
-        console.log(`Removing layers and source for ${sourceId}`);
-        const layersToRemove = [clusterLayerId, countLayerId, pointLayerId];
-        try {
-            layersToRemove.forEach(layerId => {
-                if (mapInstance.getLayer(layerId)) mapInstance.removeLayer(layerId);
-            });
-            if (mapInstance.getSource(sourceId)) mapInstance.removeSource(sourceId);
-             console.log(`Successfully removed ${sourceId}`);
-        } catch(error) {
-            console.error(`Error removing source/layers for ${sourceId}:`, error);
-        }
-    }, []); // useCallback with empty dependency array
-
-    // --- Effect for Managing Layer Visibility ---
-    // Adds/Removes layers based on the 'visiblePoiTypes' state changes
-    useEffect(() => {
-        if (!map) return; // Ensure map is loaded
-
-        // Iterate through all configured POI types
-        poiConfiguration.forEach(config => {
-            const isVisible = visiblePoiTypes[config.id]; // Check current visibility state
-            const sourceExists = map.getSource(config.sourceId); // Check if Mapbox source exists
-
-            if (isVisible && !sourceExists) {
-                addVectorPoiLayer(map, config); // Add layers if visible and not existing
-            } else if (!isVisible && sourceExists) {
-                removeVectorPoiLayer(map, config); // Remove layers if not visible but existing
-            }
-        });
-
-    }, [map, visiblePoiTypes, addVectorPoiLayer, removeVectorPoiLayer]); // Dependencies trigger effect run
-
-
-    // --- Effect for Handling Expected Mapbox Tile Errors ---
-    // Listens for map 'error' events to suppress known tile loading errors
-    useEffect(() => {
-        if (!map) return; // Don't run if map isn't available
-
-        // Define the error handler
-        const handleMapError = (e) => {
-            // Check if it's a 403/404 error when fetching tiles from our configured sources
-            const isTileError = e.error?.message?.includes('Failed to fetch') ||
-                                e.error?.message?.includes('Not Found') ||
-                                e.error?.message?.includes('Forbidden');
-            const is40xStatus = e.error?.status === 404 || e.error?.status === 403;
-            const isFromMySource = e.sourceId && poiConfiguration.some(config => config.sourceId === e.sourceId);
-
-            if (isTileError && is40xStatus && isFromMySource) {
-                // This is likely an expected error for a non-existent tile. Suppress it.
-                return;
-            }
-            // Log any other unexpected Mapbox errors
-            console.error('Mapbox error:', e.error?.message || e);
-        };
-
-        // Attach the listener
-        map.on('error', handleMapError);
-        console.log("Mapbox error handler attached.");
-
-        // Cleanup function: remove the listener when component unmounts or map changes
-        return () => {
-            if (map) {
-                map.off('error', handleMapError);
-                console.log("Mapbox error handler detached.");
-            }
-        };
-    }, [map]); // Run only when the map instance changes
-
-
-    // --- Effect for Map Event Listeners (Popups, Hover, Clicks) ---
-    // Attaches/Detaches interaction listeners based on POI layer visibility
-    useEffect(() => {
-        // Ensure map and geocoder setters are ready
-        if (!map || !setDestinationPoint || !setViaPoint) return;
-
-        // Determine if any POI type is currently set to visible
-        const anyPoiVisible = Object.values(visiblePoiTypes).some(isVisible => isVisible);
-
-        // If no POI types are visible, don't attach interaction listeners
-        if (!anyPoiVisible) {
-            return; // Exit early, cleanup below will handle removals if needed
-        }
-
-        console.log("Attaching map interaction listeners for active POI layers.");
-
-        // Close any previously open popup
-        if (activePopup.current) {
-            activePopup.current.remove();
-            activePopup.current = null;
-        }
-
-        // --- Generate lists of all potential layer IDs from config ---
-        const allClusterLayerIds = poiConfiguration.map(p => p.clusterLayerId);
-        const allPointLayerIds = poiConfiguration.map(p => p.pointLayerId);
-
-        // --- Generic Event Handlers ---
-        const handleClusterClick = (e) => {
-            const features = e.features;
-            if (!features || !features.length) return;
-            const feature = features[0];
-            const sourceId = feature.layer.source;
-            const source = map.getSource(sourceId);
-            const clusterId = feature.properties.cluster_id;
-
-            if (source && typeof source.getClusterExpansionZoom === 'function') {
-                source.getClusterExpansionZoom(clusterId, (err, zoom) => {
-                    if (!err) map.easeTo({ center: feature.geometry.coordinates, zoom: zoom + 0.5 });
-                });
-            } else {
-                map.easeTo({ center: feature.geometry.coordinates, zoom: map.getZoom() + 2 });
-            }
-        };
-
-        const handlePointClick = (e) => {
-            if (!e.features || !e.features.length) return;
-            const feature = e.features[0];
-            if (!feature?.geometry?.coordinates || feature.properties.cluster || !feature.properties) return;
-
-            const clickedLayerId = feature.layer.id;
-            const config = poiConfiguration.find(p => p.pointLayerId === clickedLayerId);
-
-            if (!config) return; // Should have a config if layer exists
-
-            const { popupProperties } = config;
-            const coordinates = feature.geometry.coordinates.slice();
-            const properties = feature.properties;
-            const name = properties[popupProperties.nameProp] || popupProperties.defaultName;
-            const websitePropValue = properties[popupProperties.websiteProp];
-            const websiteDisplay = websitePropValue
-                ? `<a href="${websitePropValue.startsWith('http') ? websitePropValue : '//' + websitePropValue}" target="_blank" rel="noopener noreferrer">${websitePropValue}</a>`
-                : "No website available";
-            const coords_lng = parseFloat(coordinates[0]);
-            const coords_lat = parseFloat(coordinates[1]);
-            if (isNaN(coords_lng) || isNaN(coords_lat)) return;
-
-            if (activePopup.current) activePopup.current.remove();
-
-            const popupContent = `<div style="font-family: 'Inter', sans-serif; max-width: 200px; display: flex; flex-direction: column; gap: 5px;"><div style="margin-bottom: 5px;"><strong style="font-size: 1.05em;">${name}</strong><br><span style="font-size: 0.9em; color: #555;">${websiteDisplay}</span></div><button class="mapboxgl-popup-button poi-set-destination-button" data-action="set-destination" data-lng="${coords_lng}" data-lat="${coords_lat}" data-name="${name.replace(/"/g, '"')}">Set as Destination</button><button class="mapboxgl-popup-button poi-set-via-button" data-action="set-via" data-lng="${coords_lng}" data-lat="${coords_lat}" data-name="${name.replace(/"/g, '"')}">Set as Via Point</button></div>`;
-
-            const popup = new mapboxgl.Popup({ closeButton: true, closeOnClick: true, anchor: 'bottom', offset: 15 })
-                .setLngLat([coords_lng, coords_lat]).setHTML(popupContent).addTo(map);
-            activePopup.current = popup;
-        };
-
-        // Handles clicks on buttons inside the popup
-        const handlePopupAction = (event) => {
-            const targetButton = event.target.closest('button[data-action]');
-            if (!targetButton) return;
-            const action = targetButton.dataset.action;
-            const lng = parseFloat(targetButton.dataset.lng);
-            const lat = parseFloat(targetButton.dataset.lat);
-            const name = targetButton.dataset.name;
-            if (isNaN(lng) || isNaN(lat)) return;
-
-            if (action === "set-destination") setDestinationPoint([lng, lat], name);
-            else if (action === "set-via") setViaPoint([lng, lat], name);
-
-            if (activePopup.current) {
-                activePopup.current.remove();
-                activePopup.current = null;
-            }
-        };
-
-        // Handlers for changing cursor style on hover
-        const handleMouseEnter = () => { if (map) map.getCanvas().style.cursor = 'pointer'; };
-        const handleMouseLeave = () => { if (map) map.getCanvas().style.cursor = ''; };
-
-        // --- Attach Event Listeners ---
-        const mapContainer = map.getContainer();
-        mapContainer.addEventListener('click', handlePopupAction); // Delegate popup clicks
-        map.on('click', allClusterLayerIds, handleClusterClick); // Clicks on clusters
-        map.on('click', allPointLayerIds, handlePointClick);     // Clicks on individual points
-        map.on('mouseenter', allClusterLayerIds, handleMouseEnter); // Hover over clusters
-        map.on('mouseleave', allClusterLayerIds, handleMouseLeave); // Hover off clusters
-        map.on('mouseenter', allPointLayerIds, handleMouseEnter); // Hover over points
-        map.on('mouseleave', allPointLayerIds, handleMouseLeave); // Hover off points
-
-        // --- Cleanup Function for THIS effect ---
-        return () => {
-            console.log("Detaching map interaction listeners for POI layers.");
-            mapContainer.removeEventListener('click', handlePopupAction); // Remove delegated listener
-            if (map && map.style) { // Check map is still valid before removing layer listeners
-                 const allLayerIds = [...allClusterLayerIds, ...allPointLayerIds];
-                 try {
-                    map.off('click', allClusterLayerIds, handleClusterClick);
-                    map.off('click', allPointLayerIds, handlePointClick);
-                    map.off('mouseenter', allLayerIds, handleMouseEnter);
-                    map.off('mouseleave', allLayerIds, handleMouseLeave);
-                 } catch(e) { /* Ignore errors during cleanup */ }
-            }
-            if (activePopup.current) { // Ensure popup is closed
-                activePopup.current.remove();
-                activePopup.current = null;
-            }
-        };
-    // Dependencies: Re-run if map, setters, or the visibility state changes
-    }, [map, setDestinationPoint, setViaPoint, visiblePoiTypes]);
-
-
-    // --- Handler to toggle visibility for a specific POI type ---
-    // Updates the visiblePoiTypes state when a button is clicked
-    const handleTogglePoiVisibility = (poiId) => {
-        setVisiblePoiTypes(prev => ({
-            ...prev,
-            [poiId]: !prev[poiId] // Toggle the boolean state for the specific id
-        }));
+    const handleSetDestination = () => {
+      setDestinationPoint(coords, name);
+      closePopup();
+    };
+    const handleSetVia = () => {
+      setViaPoint(coords, name);
+      closePopup();
     };
 
-
-    // --- Render Component UI ---
-    return (
-        <div className="poi-layers-controls">
-            <h4>Points of Interest</h4>
-            {/* Container for the toggle buttons */}
-            <div className="poi-button-container">
-                {/* Dynamically create buttons based on the imported poiConfiguration */}
-                {poiConfiguration.map((poi) => (
-                    <button
-                        key={poi.id} // React list key
-                        id={`show${poi.buttonLabel.replace(/\s+/g, '')}`} // e.g., id="showShelters"
-                        className={`button-base button-secondary ${visiblePoiTypes[poi.id] ? 'active' : ''}`}
-                        onClick={() => handleTogglePoiVisibility(poi.id)} // Attach toggle handler
-                        aria-pressed={visiblePoiTypes[poi.id]} // Accessibility
-                    >
-                        {/* Display Hide/Show based on state */}
-                        {visiblePoiTypes[poi.id] ? `Hide ${poi.buttonLabel}` : `Show ${poi.buttonLabel}`}
-                    </button>
-                ))}
-            </div>
-            {/* Static attribution text */}
-            <p className="poi-attribution">Note: Base map data © Mapbox © OpenStreetMap. POI data adapted.</p>
-        </div>
+    root.render(
+      <PoiPopup
+        name={name}
+        website={website}
+        onSetDestination={handleSetDestination}
+        onSetVia={handleSetVia}
+      />
     );
+
+    popupRef.current = popup;
+    popupRootRef.current = root;
+  }, [map, closePopup, setDestinationPoint, setViaPoint]);
+
+  // Map event handlers for clusters & points.
+  useEffect(() => {
+    if (!map) return undefined;
+
+    const anyVisible = Object.values(visiblePoiTypes).some(Boolean);
+    if (!anyVisible) {
+      closePopup();
+      return undefined;
+    }
+
+    const clusterLayerIds = poiConfiguration.map((p) => p.clusterLayerId);
+    const pointLayerIds = poiConfiguration.map((p) => p.pointLayerId);
+
+    const handleClusterClick = (e) => {
+      const feature = e.features?.[0];
+      if (!feature) return;
+      const source = map.getSource(feature.layer.source);
+      const clusterId = feature.properties.cluster_id;
+      if (source?.getClusterExpansionZoom) {
+        source.getClusterExpansionZoom(clusterId, (err, zoom) => {
+          if (!err) map.easeTo({ center: feature.geometry.coordinates, zoom: zoom + 0.5 });
+        });
+      } else {
+        map.easeTo({ center: feature.geometry.coordinates, zoom: map.getZoom() + 2 });
+      }
+    };
+
+    const handlePointClick = (e) => {
+      const feature = e.features?.[0];
+      if (!feature?.geometry?.coordinates || feature.properties.cluster) return;
+
+      const config = poiConfiguration.find((p) => p.pointLayerId === feature.layer.id);
+      if (!config) return;
+
+      const { popupProperties } = config;
+      const [lng, lat] = feature.geometry.coordinates;
+      if (!Number.isFinite(lng) || !Number.isFinite(lat)) return;
+
+      const name = feature.properties[popupProperties.nameProp] || popupProperties.defaultName;
+      const website = feature.properties[popupProperties.websiteProp] || null;
+      openPopup([lng, lat], name, website);
+    };
+
+    const setCursorPointer = () => { map.getCanvas().style.cursor = 'pointer'; };
+    const clearCursor = () => { map.getCanvas().style.cursor = ''; };
+
+    map.on('click', clusterLayerIds, handleClusterClick);
+    map.on('click', pointLayerIds, handlePointClick);
+    map.on('mouseenter', clusterLayerIds, setCursorPointer);
+    map.on('mouseleave', clusterLayerIds, clearCursor);
+    map.on('mouseenter', pointLayerIds, setCursorPointer);
+    map.on('mouseleave', pointLayerIds, clearCursor);
+
+    return () => {
+      map.off('click', clusterLayerIds, handleClusterClick);
+      map.off('click', pointLayerIds, handlePointClick);
+      map.off('mouseenter', clusterLayerIds, setCursorPointer);
+      map.off('mouseleave', clusterLayerIds, clearCursor);
+      map.off('mouseenter', pointLayerIds, setCursorPointer);
+      map.off('mouseleave', pointLayerIds, clearCursor);
+      closePopup();
+    };
+  }, [map, visiblePoiTypes, openPopup, closePopup]);
+
+  const togglePoi = (poiId) => {
+    setVisiblePoiTypes((prev) => ({ ...prev, [poiId]: !prev[poiId] }));
+  };
+
+  return (
+    <div className="poi-layers-controls">
+      <h4>Points of Interest</h4>
+      <div className="poi-button-container">
+        {poiConfiguration.map((poi) => {
+          const active = visiblePoiTypes[poi.id];
+          return (
+            <button
+              key={poi.id}
+              className={`button-base button-secondary ${active ? 'active' : ''}`}
+              onClick={() => togglePoi(poi.id)}
+              aria-pressed={active}
+              type="button"
+            >
+              {active ? `Hide ${poi.buttonLabel}` : `Show ${poi.buttonLabel}`}
+            </button>
+          );
+        })}
+      </div>
+      <p className="poi-attribution">
+        Note: Base map data © Mapbox © OpenStreetMap. POI data adapted.
+      </p>
+    </div>
+  );
 };
 
 export default PoiLayers;

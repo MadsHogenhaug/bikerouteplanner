@@ -1,64 +1,51 @@
-// app/api/routing/route.js
 import { NextResponse } from 'next/server';
-import axios from 'axios';
 
-const GH_API_KEY = process.env.GRAPHHOPPER_API_KEY;  // from .env or your environment
-const BASE_URL = 'https://graphhopper.com/api/1/route';
+const GH_API_KEY = process.env.GRAPHHOPPER_API_KEY;
+const GH_URL = 'https://graphhopper.com/api/1/route';
 
-/**
- * Helper function to call GraphHopper's route API.
- */
-async function getRoute(points, customModel) {
-  const params = { key: GH_API_KEY };
+export async function POST(request) {
+  if (!GH_API_KEY) {
+    return NextResponse.json({ error: 'Routing API key not configured' }, { status: 500 });
+  }
 
-  const data = {
-    points,            // array of [lon, lat] pairs
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  const { points, custom_model } = body;
+  if (!Array.isArray(points) || points.length < 2) {
+    return NextResponse.json({ error: 'At least a start and end point are required' }, { status: 400 });
+  }
+
+  const payload = {
+    points,
     calc_points: true,
     profile: 'bike',
     instructions: false,
     points_encoded: false,
     'ch.disable': true,
-    custom_model: customModel,
+    custom_model: custom_model ?? { priority: [] },
   };
 
-  const headers = {
-    'Content-Type': 'application/json',
-  };
-
-  const response = await axios.post(BASE_URL, data, { params, headers });
-  return response.data;
-}
-
-/**
- * The POST handler for our Next.js 13 App Router API route.
- * This is called when the frontend does fetch('/api/routing', { method: 'POST', ... }).
- */
-export async function POST(request) {
   try {
-    const body = await request.json();
-    const { points, custom_model } = body;
+    const response = await fetch(`${GH_URL}?key=${encodeURIComponent(GH_API_KEY)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
 
-    // Basic validation
-    if (!points || points.length < 2) {
-      return NextResponse.json(
-        { error: 'At least a start and end point are required' },
-        { status: 400 }
-      );
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const message = data?.message || data?.error || `GraphHopper error (status ${response.status})`;
+      return NextResponse.json({ error: message }, { status: response.status });
     }
 
-    // Set defaults if not provided
-    const cm = custom_model || { priority: [] };
-
-    // Call the helper function to get data from GraphHopper
-    const routeData = await getRoute(points, cm);
-
-    // Return the result as JSON
-    return NextResponse.json(routeData);
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Error in /api/routing POST:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal Server Error' + GH_API_KEY },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }

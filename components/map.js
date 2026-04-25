@@ -1,67 +1,60 @@
-// components/map.jsx
 'use client';
 
-import React, { createContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useCallback, useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css'; // Ensure CSS is imported
+import 'mapbox-gl/dist/mapbox-gl.css';
+import '@/lib/mapbox';
 
 export const MapContext = createContext(null);
+export const MapStyleContext = createContext(null);
+
+const INITIAL_STYLE = 'mapbox://styles/mapbox/streets-v12';
+const INITIAL_CENTER = [12.5700724, 55.6867243];
+const INITIAL_ZOOM = 10;
 
 const Map = ({ children }) => {
-  const mapContainerRef = useRef(null);
-  const mapRef = useRef(null); // Use ref to hold the map instance
-  const [isMapLoaded, setIsMapLoaded] = useState(false); // Track load status
+  const containerRef = useRef(null);
+  const mapRef = useRef(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [currentStyle, setCurrentStyle] = useState(INITIAL_STYLE);
 
   useEffect(() => {
-    if (mapRef.current || !mapContainerRef.current) return; // Prevent re-initialization
+    if (mapRef.current || !containerRef.current) return;
 
-    // Use environment variable for token
-    // Ensure you have this in your .env.local file!
-    // NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=pk.your_token_here
-    if (!process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN) {
-        console.warn("Mapbox Access Token not found. Set NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN environment variable.");
-    }
-    mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
-
-    const mapInstance = new mapboxgl.Map({
-      container: mapContainerRef.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
-      center: [12.5700724, 55.6867243],
-      zoom: 10,
-      attributionControl: true // Keep attribution control visible
+    const map = new mapboxgl.Map({
+      container: containerRef.current,
+      style: INITIAL_STYLE,
+      center: INITIAL_CENTER,
+      zoom: INITIAL_ZOOM,
+      attributionControl: true,
     });
 
-    mapInstance.addControl(new mapboxgl.NavigationControl(), "bottom-right");
-
-    mapInstance.on('load', () => {
-      mapRef.current = mapInstance;
-      setIsMapLoaded(true);
-      console.log('Map loaded and context updated');
+    map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
+    map.on('load', () => {
+      mapRef.current = map;
+      setIsLoaded(true);
     });
 
-    //  mapInstance.on('error', (e) => {
-    //     console.error('Mapbox error:', e.error?.message || e);
-    //  });
-
-    // Clean up on component unmount
     return () => {
-      console.log('Removing map');
-      // Check if map instance exists before removing
-      if (mapInstance) {
-        mapInstance.remove();
-      }
+      map.remove();
       mapRef.current = null;
-      setIsMapLoaded(false);
+      setIsLoaded(false);
     };
-  }, []); // Empty dependency array ensures this runs only once on mount
+  }, []);
+
+  const setMapStyle = useCallback((newStyle) => {
+    if (mapRef.current && newStyle !== currentStyle) {
+      mapRef.current.setStyle(newStyle);
+      setCurrentStyle(newStyle);
+    }
+  }, [currentStyle]);
 
   return (
-    // Provide the map instance via context ONLY when it's loaded
-    <MapContext.Provider value={isMapLoaded ? mapRef.current : null}>
-      {/* Apply ID for styling hook from layout.css */}
-      <div id="map" ref={mapContainerRef} />
-      {/* Render children regardless of map load status; children should handle null map */}
-      {children}
+    <MapContext.Provider value={isLoaded ? mapRef.current : null}>
+      <MapStyleContext.Provider value={{ currentStyle, setMapStyle }}>
+        <div id="map" ref={containerRef} />
+        {children}
+      </MapStyleContext.Provider>
     </MapContext.Provider>
   );
 };
